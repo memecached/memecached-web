@@ -1,3 +1,5 @@
+import { db } from "@/db";
+import { users } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -10,6 +12,20 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        await db
+          .insert(users)
+          .values({
+            email: user.email!,
+            name: user.user_metadata.full_name ?? user.email!,
+          })
+          .onConflictDoNothing({ target: users.email });
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

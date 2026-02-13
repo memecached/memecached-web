@@ -7,11 +7,19 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
+export const users = pgTable("users", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: text("email").notNull().unique(),
+  name: text("name").notNull(),
+});
+
 export const memes = pgTable(
   "memes",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
     imageUrl: text("image_url").notNull(),
     description: text("description").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
