@@ -2,6 +2,7 @@ import { describe, test, expect } from "vitest";
 import {
   buildS3Key,
   buildCloudFrontUrl,
+  extractS3KeyFromUrl,
   MAX_FILE_SIZE,
   PRESIGNED_URL_EXPIRY_SECONDS,
   ALLOWED_EXTENSIONS,
@@ -36,6 +37,20 @@ describe("buildCloudFrontUrl", () => {
     process.env.CLOUDFRONT_DOMAIN = "cdn.example.com";
 
     expect(buildCloudFrontUrl("user-123/abc.png")).toBe("https://cdn.example.com/user-123/abc.png");
+  });
+});
+
+describe("extractS3KeyFromUrl", () => {
+  test("extracts S3 key from CloudFront URL", () => {
+    process.env.CLOUDFRONT_DOMAIN = "cdn.example.com";
+    const url = "https://cdn.example.com/user-1/file-1.png";
+    expect(extractS3KeyFromUrl(url)).toBe("user-1/file-1.png");
+  });
+
+  test("handles keys with multiple path segments", () => {
+    process.env.CLOUDFRONT_DOMAIN = "cdn.example.com";
+    const url = "https://cdn.example.com/a/b/c.jpg";
+    expect(extractS3KeyFromUrl(url)).toBe("a/b/c.jpg");
   });
 });
 

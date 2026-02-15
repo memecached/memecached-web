@@ -1,32 +1,11 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-const mockGetUser = vi.fn();
-const mockFindFirst = vi.fn();
+const mockGetAuthenticatedUser = vi.fn();
 const mockGetPresignedUploadUrl = vi.fn();
 
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: vi.fn().mockResolvedValue({
-    auth: { getUser: () => mockGetUser() },
-  }),
-}));
-
-vi.mock("@/db", () => ({
-  db: {
-    query: {
-      users: {
-        findFirst: (...args: unknown[]) => mockFindFirst(...args),
-      },
-    },
-  },
-}));
-
-vi.mock("@/db/schema", () => ({
-  users: { email: "email" },
-}));
-
-vi.mock("drizzle-orm", () => ({
-  eq: vi.fn((col, val) => ({ col, val })),
+vi.mock("@/lib/auth", () => ({
+  getAuthenticatedUser: () => mockGetAuthenticatedUser(),
 }));
 
 vi.mock("@/lib/s3", () => ({
@@ -42,13 +21,28 @@ function makeRequest(query: string) {
   return new NextRequest(`http://localhost:3000/api/upload-url${query}`);
 }
 
+function authSuccess(id = "user-uuid") {
+  mockGetAuthenticatedUser.mockResolvedValue({
+    dbUser: { id },
+    error: null,
+  });
+}
+
+function authFailure(status: number, message: string) {
+  const { NextResponse } = require("next/server");
+  mockGetAuthenticatedUser.mockResolvedValue({
+    dbUser: null,
+    error: NextResponse.json({ error: message }, { status }),
+  });
+}
+
 describe("GET /api/upload-url", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   test("returns 401 when unauthenticated", async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+    authFailure(401, "Unauthorized");
 
     const res = await GET(makeRequest("?filename=test.png"));
 
@@ -57,10 +51,7 @@ describe("GET /api/upload-url", () => {
   });
 
   test("returns 400 when filename is missing", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { email: "a@b.com" } },
-      error: null,
-    });
+    authSuccess();
 
     const res = await GET(makeRequest(""));
 
@@ -71,10 +62,7 @@ describe("GET /api/upload-url", () => {
   });
 
   test("returns 400 for invalid extension", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { email: "a@b.com" } },
-      error: null,
-    });
+    authSuccess();
 
     const res = await GET(makeRequest("?filename=test.exe"));
 
@@ -84,11 +72,7 @@ describe("GET /api/upload-url", () => {
   });
 
   test("returns 404 when user not found in database", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { email: "a@b.com" } },
-      error: null,
-    });
-    mockFindFirst.mockResolvedValue(undefined);
+    authFailure(404, "User not found");
 
     const res = await GET(makeRequest("?filename=test.png"));
 
@@ -97,11 +81,7 @@ describe("GET /api/upload-url", () => {
   });
 
   test("returns presigned URL for valid request", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { email: "a@b.com" } },
-      error: null,
-    });
-    mockFindFirst.mockResolvedValue({ id: "user-uuid" });
+    authSuccess();
     mockGetPresignedUploadUrl.mockResolvedValue({
       uploadUrl: "https://s3.amazonaws.com/signed",
       key: "user-uuid/abc.png",
@@ -122,11 +102,7 @@ describe("GET /api/upload-url", () => {
   test.each(["png", "jpeg", "jpg", "gif", "webp"])(
     "accepts .%s extension",
     async (ext) => {
-      mockGetUser.mockResolvedValue({
-        data: { user: { email: "a@b.com" } },
-        error: null,
-      });
-      mockFindFirst.mockResolvedValue({ id: "user-uuid" });
+      authSuccess();
       mockGetPresignedUploadUrl.mockResolvedValue({
         uploadUrl: "https://s3.amazonaws.com/signed",
         key: `user-uuid/abc.${ext}`,
@@ -139,11 +115,7 @@ describe("GET /api/upload-url", () => {
   );
 
   test("handles uppercase extensions", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { email: "a@b.com" } },
-      error: null,
-    });
-    mockFindFirst.mockResolvedValue({ id: "user-uuid" });
+    authSuccess();
     mockGetPresignedUploadUrl.mockResolvedValue({
       uploadUrl: "https://s3.amazonaws.com/signed",
       key: "user-uuid/abc.png",

@@ -20,3 +20,8 @@ export function buildS3Key(userId: string, fileId: string, extension: string): s
 export function buildCloudFrontUrl(key: string): string {
   return `https://${process.env.CLOUDFRONT_DOMAIN}/${key}`;
 }
+
+export function extractS3KeyFromUrl(imageUrl: string): string {
+  const prefix = `https://${process.env.CLOUDFRONT_DOMAIN}/`;
+  return imageUrl.slice(prefix.length);
+}

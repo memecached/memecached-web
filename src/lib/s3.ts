@@ -1,13 +1,15 @@
 import {
   S3Client,
   PutObjectCommand,
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
   type PutObjectCommandInput,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 import { buildS3Key, PRESIGNED_URL_EXPIRY_SECONDS } from "./constants";
 
-const s3 = new S3Client({
+export const s3 = new S3Client({
   region: process.env.AWS_REGION!,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
@@ -15,7 +17,7 @@ const s3 = new S3Client({
   },
 });
 
-const BUCKET = process.env.S3_BUCKET_NAME!;
+export const BUCKET = process.env.S3_BUCKET_NAME!;
 
 export async function getPresignedUploadUrl(
   userId: string,
@@ -35,4 +37,18 @@ export async function getPresignedUploadUrl(
   });
 
   return { uploadUrl, key };
+}
+
+export async function deleteS3Object(key: string): Promise<void> {
+  await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+}
+
+export async function deleteS3Objects(keys: string[]): Promise<void> {
+  if (keys.length === 0) return;
+  await s3.send(
+    new DeleteObjectsCommand({
+      Bucket: BUCKET,
+      Delete: { Objects: keys.map((Key) => ({ Key })) },
+    }),
+  );
 }
