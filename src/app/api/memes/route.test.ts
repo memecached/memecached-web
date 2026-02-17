@@ -1,8 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const mockGetAuthenticatedUser = vi.fn();
-const mockInsert = vi.fn();
 const mockSelect = vi.fn();
 const mockTransaction = vi.fn();
 
@@ -42,12 +41,14 @@ vi.mock("drizzle-orm", () => ({
 import { POST, GET } from "./route";
 
 function makeRequest(method: string, url: string, body?: unknown) {
-  const init: RequestInit = { method };
   if (body) {
-    init.body = JSON.stringify(body);
-    init.headers = { "Content-Type": "application/json" };
+    return new NextRequest(`http://localhost:3000${url}`, {
+      method,
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+    });
   }
-  return new NextRequest(`http://localhost:3000${url}`, init);
+  return new NextRequest(`http://localhost:3000${url}`, { method });
 }
 
 function authSuccess(id = "user-uuid") {
@@ -58,7 +59,6 @@ function authSuccess(id = "user-uuid") {
 }
 
 function authFailure(status: number, message: string) {
-  const { NextResponse } = require("next/server");
   mockGetAuthenticatedUser.mockResolvedValue({
     dbUser: null,
     error: NextResponse.json({ error: message }, { status }),
@@ -92,7 +92,7 @@ describe("POST /api/memes", () => {
 
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toMatch(/imageUrl and description are required/);
+    expect(body.error).toBeDefined();
   });
 
   test("returns 400 when description is missing", async () => {
@@ -129,10 +129,11 @@ describe("POST /api/memes", () => {
       imageUrl: "https://cdn/img.png",
       description: "funny meme",
       createdAt: new Date("2024-01-01"),
+      updatedAt: new Date("2024-01-01"),
       tags: ["funny", "cat"],
     };
 
-    mockTransaction.mockImplementation(async (fn) => {
+    mockTransaction.mockImplementation(async () => {
       return createdMeme;
     });
 
@@ -151,6 +152,7 @@ describe("POST /api/memes", () => {
       imageUrl: "https://cdn/img.png",
       description: "funny meme",
       createdAt: "2024-01-01T00:00:00.000Z",
+      updatedAt: "2024-01-01T00:00:00.000Z",
       tags: ["funny", "cat"],
     });
   });
@@ -163,6 +165,7 @@ describe("POST /api/memes", () => {
       imageUrl: "https://cdn/img.png",
       description: "no tags",
       createdAt: new Date("2024-01-01"),
+      updatedAt: new Date("2024-01-01"),
       tags: [],
     };
 
@@ -216,8 +219,6 @@ describe("GET /api/memes", () => {
     mockSelect.mockReturnValue({ from: mockFrom });
 
     // Mock the tag query (second select call)
-    const mockTagLimit = vi.fn();
-    const mockTagOrderBy = vi.fn();
     const mockTagWhere = vi.fn().mockResolvedValue([
       { memeId: "m1", tagName: "funny" },
     ]);
@@ -272,7 +273,15 @@ describe("GET /api/memes", () => {
     expect(body.nextCursor).not.toBeNull();
   });
 
-  test("respects limit query param with max of 50", async () => {
+  test("returns 400 when limit exceeds max", async () => {
+    authSuccess();
+
+    const res = await GET(makeRequest("GET", "/api/memes?limit=100"));
+
+    expect(res.status).toBe(400);
+  });
+
+  test("respects custom limit query param", async () => {
     authSuccess();
 
     const mockLimit = vi.fn().mockResolvedValue([]);
@@ -281,9 +290,9 @@ describe("GET /api/memes", () => {
     const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
     mockSelect.mockReturnValue({ from: mockFrom });
 
-    await GET(makeRequest("GET", "/api/memes?limit=100"));
+    await GET(makeRequest("GET", "/api/memes?limit=10"));
 
-    // Should cap at 50+1 = 51
-    expect(mockLimit).toHaveBeenCalledWith(51);
+    // limit + 1 for pagination check
+    expect(mockLimit).toHaveBeenCalledWith(11);
   });
 });

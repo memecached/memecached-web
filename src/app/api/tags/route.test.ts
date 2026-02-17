@@ -1,4 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
+import { NextResponse } from "next/server";
 
 const mockGetAuthenticatedUser = vi.fn();
 const mockSelect = vi.fn();
@@ -31,7 +32,6 @@ function authSuccess(id = "user-uuid") {
 }
 
 function authFailure(status: number, message: string) {
-  const { NextResponse } = require("next/server");
   mockGetAuthenticatedUser.mockResolvedValue({
     dbUser: null,
     error: NextResponse.json({ error: message }, { status }),

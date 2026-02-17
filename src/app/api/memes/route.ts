@@ -1,28 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { memes, tags, memeTags } from "@/db/schema";
-import { and, desc, eq, ilike, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, lt } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { createMemeSchema, listMemesQuerySchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   const { dbUser, error } = await getAuthenticatedUser();
   if (error) return error;
 
-  let body: { imageUrl?: string; description?: string; tags?: string[] };
+  let rawBody: unknown;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { imageUrl, description, tags: tagNames } = body;
-
-  if (!imageUrl || !description) {
+  const parsed = createMemeSchema.safeParse(rawBody);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "imageUrl and description are required" },
+      { error: parsed.error.issues[0].message },
       { status: 400 },
     );
   }
+
+  const { imageUrl, description, tags: tagNames } = parsed.data;
 
   const result = await db.transaction(async (tx) => {
     const [meme] = await tx
@@ -65,6 +67,7 @@ export async function POST(request: NextRequest) {
       imageUrl: meme.imageUrl,
       description: meme.description,
       createdAt: meme.createdAt,
+      updatedAt: meme.updatedAt,
       tags: resolvedTags.map((t) => t.name),
     };
   });
@@ -76,11 +79,16 @@ export async function GET(request: NextRequest) {
   const { dbUser, error } = await getAuthenticatedUser();
   if (error) return error;
 
-  const params = request.nextUrl.searchParams;
-  const cursor = params.get("cursor");
-  const limit = Math.min(Number(params.get("limit")) || 20, 50);
-  const q = params.get("q");
-  const tag = params.get("tag");
+  const rawParams = Object.fromEntries(request.nextUrl.searchParams.entries());
+  const parsed = listMemesQuerySchema.safeParse(rawParams);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0].message },
+      { status: 400 },
+    );
+  }
+
+  const { cursor, limit, q, tag } = parsed.data;
 
   const conditions = [eq(memes.userId, dbUser.id)];
 
@@ -145,6 +153,7 @@ export async function GET(request: NextRequest) {
     imageUrl: m.imageUrl,
     description: m.description,
     createdAt: m.createdAt,
+    updatedAt: m.updatedAt,
     tags: tagMap[m.id] || [],
   }));
 

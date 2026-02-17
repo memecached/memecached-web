@@ -5,26 +5,28 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { deleteS3Objects } from "@/lib/s3";
 import { extractS3KeyFromUrl } from "@/lib/constants";
+import { bulkDeleteSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   const { dbUser, error } = await getAuthenticatedUser();
   if (error) return error;
 
-  let body: { ids?: string[] };
+  let rawBody: unknown;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { ids } = body;
-
-  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+  const parsed = bulkDeleteSchema.safeParse(rawBody);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "ids array is required and must not be empty" },
+      { error: parsed.error.issues[0].message },
       { status: 400 },
     );
   }
+
+  const { ids } = parsed.data;
 
   // Fetch all memes that belong to this user
   const userMemes = await db

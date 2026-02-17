@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const mockGetAuthenticatedUser = vi.fn();
 const mockSelect = vi.fn();
@@ -39,13 +39,20 @@ vi.stubEnv("CLOUDFRONT_DOMAIN", "d123.cloudfront.net");
 
 import { POST } from "./route";
 
+const UUID1 = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+const UUID2 = "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22";
+
 function makeRequest(body?: unknown) {
-  const init: RequestInit = { method: "POST" };
   if (body !== undefined) {
-    init.body = JSON.stringify(body);
-    init.headers = { "Content-Type": "application/json" };
+    return new NextRequest("http://localhost:3000/api/memes/bulk-delete", {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+    });
   }
-  return new NextRequest("http://localhost:3000/api/memes/bulk-delete", init);
+  return new NextRequest("http://localhost:3000/api/memes/bulk-delete", {
+    method: "POST",
+  });
 }
 
 function authSuccess(id = "user-uuid") {
@@ -56,7 +63,6 @@ function authSuccess(id = "user-uuid") {
 }
 
 function authFailure(status: number, message: string) {
-  const { NextResponse } = require("next/server");
   mockGetAuthenticatedUser.mockResolvedValue({
     dbUser: null,
     error: NextResponse.json({ error: message }, { status }),
@@ -71,7 +77,7 @@ describe("POST /api/memes/bulk-delete", () => {
   test("returns 401 when unauthenticated", async () => {
     authFailure(401, "Unauthorized");
 
-    const res = await POST(makeRequest({ ids: ["m1"] }));
+    const res = await POST(makeRequest({ ids: [UUID1] }));
 
     expect(res.status).toBe(401);
   });
@@ -83,13 +89,21 @@ describe("POST /api/memes/bulk-delete", () => {
 
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toMatch(/ids array is required/);
+    expect(body.error).toBeDefined();
   });
 
   test("returns 400 when ids is empty", async () => {
     authSuccess();
 
     const res = await POST(makeRequest({ ids: [] }));
+
+    expect(res.status).toBe(400);
+  });
+
+  test("returns 400 when ids contains non-UUID strings", async () => {
+    authSuccess();
+
+    const res = await POST(makeRequest({ ids: ["not-a-uuid"] }));
 
     expect(res.status).toBe(400);
   });
@@ -113,12 +127,12 @@ describe("POST /api/memes/bulk-delete", () => {
 
     // User owns only 1 of the 2 requested
     const mockWhere = vi.fn().mockResolvedValue([
-      { id: "m1", imageUrl: "https://d123.cloudfront.net/u/1.png" },
+      { id: UUID1, imageUrl: "https://d123.cloudfront.net/u/1.png" },
     ]);
     const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
     mockSelect.mockReturnValue({ from: mockFrom });
 
-    const res = await POST(makeRequest({ ids: ["m1", "m2"] }));
+    const res = await POST(makeRequest({ ids: [UUID1, UUID2] }));
 
     expect(res.status).toBe(403);
     const body = await res.json();
@@ -129,8 +143,8 @@ describe("POST /api/memes/bulk-delete", () => {
     authSuccess();
 
     const userMemes = [
-      { id: "m1", imageUrl: "https://d123.cloudfront.net/u/1.png" },
-      { id: "m2", imageUrl: "https://d123.cloudfront.net/u/2.jpg" },
+      { id: UUID1, imageUrl: "https://d123.cloudfront.net/u/1.png" },
+      { id: UUID2, imageUrl: "https://d123.cloudfront.net/u/2.jpg" },
     ];
     const mockSelectWhere = vi.fn().mockResolvedValue(userMemes);
     const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere });
@@ -140,7 +154,7 @@ describe("POST /api/memes/bulk-delete", () => {
     mockDelete.mockReturnValue({ where: mockDeleteWhere });
     mockDeleteS3Objects.mockResolvedValue(undefined);
 
-    const res = await POST(makeRequest({ ids: ["m1", "m2"] }));
+    const res = await POST(makeRequest({ ids: [UUID1, UUID2] }));
 
     expect(res.status).toBe(204);
     expect(mockDelete).toHaveBeenCalled();

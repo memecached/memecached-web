@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const mockGetAuthenticatedUser = vi.fn();
 const mockFindFirst = vi.fn();
@@ -61,7 +61,6 @@ function authSuccess(id = "user-uuid") {
 }
 
 function authFailure(status: number, message: string) {
-  const { NextResponse } = require("next/server");
   mockGetAuthenticatedUser.mockResolvedValue({
     dbUser: null,
     error: NextResponse.json({ error: message }, { status }),
@@ -119,6 +118,7 @@ describe("PATCH /api/memes/[id]", () => {
       imageUrl: "https://cdn/1.png",
       description: "updated",
       createdAt: new Date("2024-01-01"),
+      updatedAt: new Date("2024-01-02"),
       tags: ["funny"],
     };
     mockTransaction.mockImplementation(async () => updatedResult);

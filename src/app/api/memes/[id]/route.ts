@@ -5,6 +5,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { deleteS3Object } from "@/lib/s3";
 import { extractS3KeyFromUrl } from "@/lib/constants";
+import { updateMemeSchema } from "@/lib/validations";
 
 export async function PATCH(
   request: NextRequest,
@@ -23,14 +24,22 @@ export async function PATCH(
     return NextResponse.json({ error: "Meme not found" }, { status: 404 });
   }
 
-  let body: { description?: string; tags?: string[] };
+  let rawBody: unknown;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { description, tags: tagNames } = body;
+  const parsed = updateMemeSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0].message },
+      { status: 400 },
+    );
+  }
+
+  const { description, tags: tagNames } = parsed.data;
 
   const result = await db.transaction(async (tx) => {
     let updatedMeme = existing;
@@ -90,6 +99,7 @@ export async function PATCH(
       imageUrl: updatedMeme.imageUrl,
       description: updatedMeme.description,
       createdAt: updatedMeme.createdAt,
+      updatedAt: updatedMeme.updatedAt,
       tags: resolvedTags.map((t) => t.name),
     };
   });
