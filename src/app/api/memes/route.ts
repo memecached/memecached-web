@@ -42,29 +42,25 @@ export async function POST(request: NextRequest) {
 
     let resolvedTags: { id: string; name: string }[] = [];
 
-    if (tagNames && tagNames.length > 0) {
-      // Upsert tags (insert if not exists)
-      await tx
-        .insert(tags)
-        .values(tagNames.map((name) => ({ name: name.toLowerCase() })))
-        .onConflictDoNothing({ target: tags.name });
+    // Upsert tags (insert if not exists)
+    await tx
+      .insert(tags)
+      .values(tagNames.map((name) => ({ name: name.toLowerCase() })))
+      .onConflictDoNothing({ target: tags.name });
 
-      // Fetch the tag rows
-      resolvedTags = await tx
-        .select({ id: tags.id, name: tags.name })
-        .from(tags)
-        .where(
-          inArray(
-            tags.name,
-            tagNames.map((n) => n.toLowerCase()),
-          ),
-        );
+    // Fetch the tag rows
+    resolvedTags = await tx
+      .select({ id: tags.id, name: tags.name })
+      .from(tags)
+      .where(
+        inArray(
+          tags.name,
+          tagNames.map((n) => n.toLowerCase()),
+        ),
+      );
 
-      // Insert junction rows
-      await tx
-        .insert(memeTags)
-        .values(resolvedTags.map((t) => ({ memeId: meme.id, tagId: t.id })));
-    }
+    // Insert junction rows
+    await tx.insert(memeTags).values(resolvedTags.map((t) => ({ memeId: meme.id, tagId: t.id })));
 
     return {
       id: meme.id,

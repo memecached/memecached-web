@@ -86,9 +86,7 @@ describe("POST /api/memes", () => {
   test("returns 400 when imageUrl is missing", async () => {
     authSuccess();
 
-    const res = await POST(
-      makeRequest("POST", "/api/memes", { description: "test" }),
-    );
+    const res = await POST(makeRequest("POST", "/api/memes", { description: "test", tags: ["funny"] }));
 
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -98,11 +96,21 @@ describe("POST /api/memes", () => {
   test("returns 400 when description is missing", async () => {
     authSuccess();
 
-    const res = await POST(
-      makeRequest("POST", "/api/memes", { imageUrl: "https://cdn/img.png" }),
-    );
+    const res = await POST(makeRequest("POST", "/api/memes", { imageUrl: "https://cdn/img.png", tags: ["funny"] }));
 
     expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBeDefined();
+  });
+
+  test("returns 400 when tags are missing", async () => {
+    authSuccess();
+
+    const res = await POST(makeRequest("POST", "/api/memes", { description: "test", imageUrl: "https://cdn/img.png" }));
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBeDefined();
   });
 
   test("returns 400 for invalid JSON body", async () => {
@@ -156,32 +164,6 @@ describe("POST /api/memes", () => {
       tags: ["funny", "cat"],
     });
   });
-
-  test("returns 201 without tags", async () => {
-    authSuccess();
-
-    const createdMeme = {
-      id: "meme-2",
-      imageUrl: "https://cdn/img.png",
-      description: "no tags",
-      createdAt: new Date("2024-01-01"),
-      updatedAt: new Date("2024-01-01"),
-      tags: [],
-    };
-
-    mockTransaction.mockImplementation(async () => createdMeme);
-
-    const res = await POST(
-      makeRequest("POST", "/api/memes", {
-        imageUrl: "https://cdn/img.png",
-        description: "no tags",
-      }),
-    );
-
-    expect(res.status).toBe(201);
-    const body = await res.json();
-    expect(body.meme.tags).toEqual([]);
-  });
 });
 
 describe("GET /api/memes", () => {
@@ -219,16 +201,12 @@ describe("GET /api/memes", () => {
     mockSelect.mockReturnValue({ from: mockFrom });
 
     // Mock the tag query (second select call)
-    const mockTagWhere = vi.fn().mockResolvedValue([
-      { memeId: "m1", tagName: "funny" },
-    ]);
+    const mockTagWhere = vi.fn().mockResolvedValue([{ memeId: "m1", tagName: "funny" }]);
     const mockTagInnerJoin = vi.fn().mockReturnValue({ where: mockTagWhere });
     const mockTagFrom = vi.fn().mockReturnValue({ innerJoin: mockTagInnerJoin });
 
     // On second call, return tag query chain
-    mockSelect
-      .mockReturnValueOnce({ from: mockFrom })
-      .mockReturnValueOnce({ from: mockTagFrom });
+    mockSelect.mockReturnValueOnce({ from: mockFrom }).mockReturnValueOnce({ from: mockTagFrom });
 
     const res = await GET(makeRequest("GET", "/api/memes"));
 
@@ -261,9 +239,7 @@ describe("GET /api/memes", () => {
     const mockTagInnerJoin = vi.fn().mockReturnValue({ where: mockTagWhere });
     const mockTagFrom = vi.fn().mockReturnValue({ innerJoin: mockTagInnerJoin });
 
-    mockSelect
-      .mockReturnValueOnce({ from: mockFrom })
-      .mockReturnValueOnce({ from: mockTagFrom });
+    mockSelect.mockReturnValueOnce({ from: mockFrom }).mockReturnValueOnce({ from: mockTagFrom });
 
     const res = await GET(makeRequest("GET", "/api/memes"));
 

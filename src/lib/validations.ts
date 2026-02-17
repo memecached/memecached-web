@@ -8,12 +8,12 @@ import { memes, tags } from "@/db/schema";
 export const createMemeSchema = z.object({
   imageUrl: z.url(),
   description: z.string().min(1),
-  tags: z.array(z.string().min(1)).optional(),
+  tags: z.array(z.string().min(1)).min(1),
 });
 
 export const updateMemeSchema = z.object({
   description: z.string().min(1).optional(),
-  tags: z.array(z.string().min(1)).optional(),
+  tags: z.array(z.string().min(1)).min(1).optional(),
 });
 
 export const listMemesQuerySchema = z.object({
