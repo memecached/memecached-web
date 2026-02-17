@@ -1,9 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { memes, tags, memeTags } from "@/db/schema";
 import { and, desc, eq, ilike, inArray, lt } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { createMemeSchema, listMemesQuerySchema } from "@/lib/validations";
+import {
+  createMemeSchema,
+  listMemesQuerySchema,
+  apiSuccess,
+  apiError,
+  type MemeResponse,
+  type MemeListResponse,
+} from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   const { dbUser, error } = await getAuthenticatedUser();
@@ -13,15 +20,12 @@ export async function POST(request: NextRequest) {
   try {
     rawBody = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return apiError("Invalid JSON body", 400);
   }
 
   const parsed = createMemeSchema.safeParse(rawBody);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0].message },
-      { status: 400 },
-    );
+    return apiError(parsed.error.issues[0].message, 400);
   }
 
   const { imageUrl, description, tags: tagNames } = parsed.data;
@@ -64,6 +68,7 @@ export async function POST(request: NextRequest) {
 
     return {
       id: meme.id,
+      userId: meme.userId,
       imageUrl: meme.imageUrl,
       description: meme.description,
       createdAt: meme.createdAt,
@@ -72,7 +77,7 @@ export async function POST(request: NextRequest) {
     };
   });
 
-  return NextResponse.json({ meme: result }, { status: 201 });
+  return apiSuccess<MemeResponse>({ meme: result }, 201);
 }
 
 export async function GET(request: NextRequest) {
@@ -82,10 +87,7 @@ export async function GET(request: NextRequest) {
   const rawParams = Object.fromEntries(request.nextUrl.searchParams.entries());
   const parsed = listMemesQuerySchema.safeParse(rawParams);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0].message },
-      { status: 400 },
-    );
+    return apiError(parsed.error.issues[0].message, 400);
   }
 
   const { cursor, limit, q, tag } = parsed.data;
@@ -150,6 +152,7 @@ export async function GET(request: NextRequest) {
 
   const memesWithTags = rows.map((m) => ({
     id: m.id,
+    userId: m.userId,
     imageUrl: m.imageUrl,
     description: m.description,
     createdAt: m.createdAt,
@@ -157,5 +160,5 @@ export async function GET(request: NextRequest) {
     tags: tagMap[m.id] || [],
   }));
 
-  return NextResponse.json({ memes: memesWithTags, nextCursor });
+  return apiSuccess<MemeListResponse>({ memes: memesWithTags, nextCursor });
 }

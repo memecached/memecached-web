@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { tags } from "@/db/schema";
 import { asc } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { apiSuccess, type TagListResponse } from "@/lib/validations";
 
 export async function GET() {
   const { error } = await getAuthenticatedUser();
@@ -13,5 +13,5 @@ export async function GET() {
     .from(tags)
     .orderBy(asc(tags.name));
 
-  return NextResponse.json({ tags: allTags });
+  return apiSuccess<TagListResponse>({ tags: allTags });
 }

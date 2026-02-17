@@ -5,7 +5,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { deleteS3Objects } from "@/lib/s3";
 import { extractS3KeyFromUrl } from "@/lib/constants";
-import { bulkDeleteSchema } from "@/lib/validations";
+import { bulkDeleteSchema, apiError } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   const { dbUser, error } = await getAuthenticatedUser();
@@ -15,15 +15,12 @@ export async function POST(request: NextRequest) {
   try {
     rawBody = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return apiError("Invalid JSON body", 400);
   }
 
   const parsed = bulkDeleteSchema.safeParse(rawBody);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0].message },
-      { status: 400 },
-    );
+    return apiError(parsed.error.issues[0].message, 400);
   }
 
   const { ids } = parsed.data;
@@ -35,10 +32,7 @@ export async function POST(request: NextRequest) {
     .where(and(inArray(memes.id, ids), eq(memes.userId, dbUser.id)));
 
   if (userMemes.length !== ids.length) {
-    return NextResponse.json(
-      { error: "Some memes not found or not owned by user" },
-      { status: 403 },
-    );
+    return apiError("Some memes not found or not owned by user", 403);
   }
 
   const s3Keys = userMemes.map((m) => extractS3KeyFromUrl(m.imageUrl));

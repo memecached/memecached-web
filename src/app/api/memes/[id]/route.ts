@@ -5,7 +5,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { deleteS3Object } from "@/lib/s3";
 import { extractS3KeyFromUrl } from "@/lib/constants";
-import { updateMemeSchema } from "@/lib/validations";
+import { updateMemeSchema, apiSuccess, apiError, type MemeResponse } from "@/lib/validations";
 
 export async function PATCH(
   request: NextRequest,
@@ -21,22 +21,19 @@ export async function PATCH(
   });
 
   if (!existing) {
-    return NextResponse.json({ error: "Meme not found" }, { status: 404 });
+    return apiError("Meme not found", 404);
   }
 
   let rawBody: unknown;
   try {
     rawBody = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return apiError("Invalid JSON body", 400);
   }
 
   const parsed = updateMemeSchema.safeParse(rawBody);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0].message },
-      { status: 400 },
-    );
+    return apiError(parsed.error.issues[0].message, 400);
   }
 
   const { description, tags: tagNames } = parsed.data;
@@ -96,6 +93,7 @@ export async function PATCH(
 
     return {
       id: updatedMeme.id,
+      userId: updatedMeme.userId,
       imageUrl: updatedMeme.imageUrl,
       description: updatedMeme.description,
       createdAt: updatedMeme.createdAt,
@@ -104,7 +102,7 @@ export async function PATCH(
     };
   });
 
-  return NextResponse.json({ meme: result });
+  return apiSuccess<MemeResponse>({ meme: result });
 }
 
 export async function DELETE(
@@ -121,7 +119,7 @@ export async function DELETE(
   });
 
   if (!existing) {
-    return NextResponse.json({ error: "Meme not found" }, { status: 404 });
+    return apiError("Meme not found", 404);
   }
 
   const s3Key = extractS3KeyFromUrl(existing.imageUrl);
