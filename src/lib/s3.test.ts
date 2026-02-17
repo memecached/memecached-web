@@ -1,16 +1,14 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
-// Set env vars and create mock before module evaluation via vi.hoisted
-const mockSend = vi.hoisted(() => {
-  process.env.AWS_REGION = "us-west-2";
-  process.env.AWS_ACCESS_KEY_ID = "test-key";
-  process.env.AWS_SECRET_ACCESS_KEY = "test-secret";
-  process.env.S3_BUCKET_NAME = "test-bucket";
-  return vi.fn();
-});
+vi.stubEnv("AWS_REGION", "us-west-2");
+vi.stubEnv("AWS_ACCESS_KEY_ID", "test-key");
+vi.stubEnv("AWS_SECRET_ACCESS_KEY", "test-secret");
+vi.stubEnv("S3_BUCKET_NAME", "test-bucket");
+
+const mockSend = vi.fn();
 
 vi.mock("@aws-sdk/client-s3", () => ({
-  S3Client: vi.fn(() => ({ send: mockSend })),
+  S3Client: vi.fn(() => ({ send: (...args: unknown[]) => mockSend(...args) })),
   PutObjectCommand: vi.fn(),
   DeleteObjectCommand: vi.fn((input: unknown) => ({ _input: input, _type: "DeleteObject" })),
   DeleteObjectsCommand: vi.fn((input: unknown) => ({ _input: input, _type: "DeleteObjects" })),
