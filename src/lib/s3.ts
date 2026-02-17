@@ -1,6 +1,8 @@
 import {
   S3Client,
   PutObjectCommand,
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
   type PutObjectCommandInput,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -15,8 +17,6 @@ const s3 = new S3Client({
   },
 });
 
-const BUCKET = process.env.S3_BUCKET_NAME!;
-
 export async function getPresignedUploadUrl(
   userId: string,
   extension: string,
@@ -24,7 +24,7 @@ export async function getPresignedUploadUrl(
   const key = buildS3Key(userId, randomUUID(), extension);
 
   const params: PutObjectCommandInput = {
-    Bucket: BUCKET,
+    Bucket: process.env.S3_BUCKET_NAME!,
     Key: key,
   };
 
@@ -35,4 +35,18 @@ export async function getPresignedUploadUrl(
   });
 
   return { uploadUrl, key };
+}
+
+export async function deleteS3Object(key: string): Promise<void> {
+  await s3.send(new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET_NAME!, Key: key }));
+}
+
+export async function deleteS3Objects(keys: string[]): Promise<void> {
+  if (keys.length === 0) return;
+  await s3.send(
+    new DeleteObjectsCommand({
+      Bucket: process.env.S3_BUCKET_NAME!,
+      Delete: { Objects: keys.map((Key) => ({ Key })) },
+    }),
+  );
 }
