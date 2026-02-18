@@ -2,11 +2,21 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { TagInput } from "@/components/tag-input";
 import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { SUCCESS_DISPLAY_MS } from "@/lib/constants";
 import { MAX_FILE_SIZE, ACCEPTED_MIME_TYPES } from "@/lib/constants";
+import { createMemeSchema } from "@/lib/validations";
+
+const formSchema = createMemeSchema.omit({ imageUrl: true });
+
+type FormValues = z.infer<typeof formSchema>;
 
 type UploadState =
   | { status: "idle" }
@@ -21,6 +31,26 @@ export function UploadForm() {
   const [uploadState, setUploadState] = useState<UploadState>({
     status: "idle",
   });
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset: resetForm,
+    formState: { errors, isValid },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    mode: "onChange",
+    defaultValues: { description: "", tags: [] },
+  });
+
+  useEffect(() => {
+    fetch("/api/tags")
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => setAvailableTags(data.tags.map((t: { name: string }) => t.name)))
+      .catch(() => {});
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[], rejections: FileRejection[]) => {
     if (rejections.length > 0) {
@@ -43,7 +73,7 @@ export function UploadForm() {
     setUploadState({ status: "previewing" });
   }, []);
 
-  const handleUpload = async () => {
+  const onSubmit = async (data: FormValues) => {
     if (!file) return;
 
     setUploadState({ status: "uploading" });
@@ -68,9 +98,25 @@ export function UploadForm() {
         throw new Error("Upload to S3 failed");
       }
 
+      const memeRes = await fetch("/api/memes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl,
+          description: data.description,
+          tags: data.tags,
+        }),
+      });
+
+      if (!memeRes.ok) {
+        const body = await memeRes.json();
+        throw new Error(body.error ?? "Failed to create meme");
+      }
+
       if (preview) URL.revokeObjectURL(preview);
       setPreview(null);
       setFile(null);
+      resetForm();
       setUploadState({ status: "success", imageUrl });
     } catch (err) {
       setUploadState({
@@ -94,6 +140,7 @@ export function UploadForm() {
     if (preview) URL.revokeObjectURL(preview);
     setFile(null);
     setPreview(null);
+    resetForm();
     setUploadState({ status: "idle" });
   };
 
@@ -151,17 +198,57 @@ export function UploadForm() {
         </div>
       )}
 
-      {uploadState.status === "previewing" && (
-        <div className="flex gap-2">
-          <Button className="flex-1" onClick={handleUpload}>
-            <Upload className="mr-2 h-4 w-4" />
-            Upload
-          </Button>
-          <Button variant="outline" onClick={reset}>
-            <X className="mr-1 h-4 w-4" />
-            Cancel
-          </Button>
-        </div>
+      {(uploadState.status === "previewing" || uploadState.status === "uploading") && (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+          <div>
+            <label htmlFor="description" className="mb-1 block text-sm font-medium">
+              Description
+            </label>
+            <Textarea
+              id="description"
+              placeholder="Describe your meme..."
+              disabled={uploadState.status === "uploading"}
+              {...register("description")}
+            />
+            {errors.description && (
+              <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="tags" className="mb-1 block text-sm font-medium">
+              Tags
+            </label>
+            <Controller
+              name="tags"
+              control={control}
+              render={({ field }) => (
+                <TagInput
+                  id="tags"
+                  value={field.value}
+                  onChange={field.onChange}
+                  suggestions={availableTags}
+                  placeholder="Add tags..."
+                  disabled={uploadState.status === "uploading"}
+                />
+              )}
+            />
+            {errors.tags && (
+              <p className="mt-1 text-xs text-red-500">{errors.tags.message}</p>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <Button type="submit" className="flex-1" disabled={!isValid || uploadState.status === "uploading"}>
+              <Upload className="mr-2 h-4 w-4" />
+              Upload
+            </Button>
+            <Button type="button" variant="outline" onClick={reset} disabled={uploadState.status === "uploading"}>
+              <X className="mr-1 h-4 w-4" />
+              Cancel
+            </Button>
+          </div>
+        </form>
       )}
 
       {uploadState.status === "success" && (
