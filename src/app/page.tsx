@@ -1,68 +1,177 @@
-import Image from "next/image";
+"use client";
+
+import { Suspense, useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { Search, Loader2, ImageOff } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/logout-button";
+import { MemeCard } from "@/components/meme-card";
+import type { MemeListResponse, TagListResponse } from "@/lib/validations";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <div className="flex w-full items-center justify-between">
-          <Image
-            className="dark:invert"
-            src="/next.svg"
-            alt="Next.js logo"
-            width={100}
-            height={20}
-            priority
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <Gallery />
+    </Suspense>
+  );
+}
+
+function Gallery() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const q = searchParams.get("q") ?? "";
+  const tag = searchParams.get("tag") ?? "";
+
+  const [searchInput, setSearchInput] = useState(q);
+
+  // Debounce search input → URL params
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams);
+      if (searchInput) {
+        params.set("q", searchInput);
+      } else {
+        params.delete("q");
+      }
+      router.replace(`?${params.toString()}`);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const tagsQuery = useQuery({
+    queryKey: ["tags"],
+    queryFn: async () => {
+      const res = await fetch("/api/tags");
+      if (!res.ok) throw new Error("Failed to fetch tags");
+      return (await res.json()) as TagListResponse;
+    },
+  });
+
+  const memesQuery = useInfiniteQuery({
+    queryKey: ["memes", q, tag],
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      if (tag) params.set("tag", tag);
+      if (pageParam) params.set("cursor", pageParam);
+      const res = await fetch(`/api/memes?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch memes");
+      return (await res.json()) as MemeListResponse;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  });
+
+  const memes = memesQuery.data?.pages.flatMap((p) => p.memes) ?? [];
+
+  const toggleTag = (tagName: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (tag === tagName) {
+      params.delete("tag");
+    } else {
+      params.set("tag", tagName);
+    }
+    router.replace(`?${params.toString()}`);
+  };
+
+  return (
+    <div className="min-h-screen bg-zinc-50 font-sans dark:bg-black">
+      <header className="border-b bg-white dark:bg-black">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+          <h1 className="text-xl font-bold">memecached</h1>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link href="/upload">Upload</Link>
+            </Button>
+            <LogoutButton />
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search memes..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-9"
           />
-          <LogoutButton />
         </div>
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+
+        {/* Tag filter */}
+        {tagsQuery.data && tagsQuery.data.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {tagsQuery.data.tags.map((t) => (
+              <Badge
+                key={t.id}
+                variant={tag === t.name ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => toggleTag(t.name)}
+              >
+                {t.name}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Loading state */}
+        {memesQuery.isLoading && (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {/* Error state */}
+        {memesQuery.isError && (
+          <div className="flex flex-col items-center gap-2 py-12 text-destructive">
+            <p>Failed to load memes</p>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {memesQuery.isSuccess && memes.length === 0 && (
+          <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
+            <ImageOff className="h-12 w-12" />
+            <p>
+              {q || tag
+                ? "No memes match your filters"
+                : "No memes yet. Upload your first meme!"}
+            </p>
+          </div>
+        )}
+
+        {/* Meme grid */}
+        {memes.length > 0 && (
+          <div className="columns-1 gap-4 sm:columns-2 md:columns-3 lg:columns-4">
+            {memes.map((meme) => (
+              <MemeCard key={meme.id} meme={meme} />
+            ))}
+          </div>
+        )}
+
+        {/* Load more */}
+        {memesQuery.hasNextPage && (
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => memesQuery.fetchNextPage()}
+              disabled={memesQuery.isFetchingNextPage}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+              {memesQuery.isFetchingNextPage ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Load more"
+              )}
+            </Button>
+          </div>
+        )}
       </main>
     </div>
   );
