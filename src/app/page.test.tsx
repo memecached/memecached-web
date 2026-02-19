@@ -44,19 +44,19 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <Home />
+      <Gallery />
     </QueryClientProvider>,
   );
 }
 
 // Lazy import to allow mocks to register first
-let Home: typeof import("./page").default;
+let Gallery: typeof import("@/components/gallery").Gallery;
 
 beforeEach(async () => {
   vi.clearAllMocks();
   currentSearchParams = new URLSearchParams();
-  const mod = await import("./page");
-  Home = mod.default;
+  const mod = await import("@/components/gallery");
+  Gallery = mod.Gallery;
 });
 
 afterEach(() => {
