@@ -78,6 +78,9 @@ export function Gallery() {
           <h1 className="text-xl font-bold">memecached</h1>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline">
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
+            <Button asChild variant="outline">
               <Link href="/upload">Upload</Link>
             </Button>
             <LogoutButton />
@@ -131,11 +134,7 @@ export function Gallery() {
         {memesQuery.isSuccess && memes.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
             <ImageOff className="h-12 w-12" />
-            <p>
-              {q || tag
-                ? "No memes match your filters"
-                : "No memes yet. Upload your first meme!"}
-            </p>
+            <p>{q || tag ? "No memes match your filters" : "No memes yet. Upload your first meme!"}</p>
           </div>
         )}
 
@@ -156,11 +155,7 @@ export function Gallery() {
               onClick={() => memesQuery.fetchNextPage()}
               disabled={memesQuery.isFetchingNextPage}
             >
-              {memesQuery.isFetchingNextPage ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Load more"
-              )}
+              {memesQuery.isFetchingNextPage ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load more"}
             </Button>
           </div>
         )}

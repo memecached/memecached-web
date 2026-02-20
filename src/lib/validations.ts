@@ -27,6 +27,20 @@ export const bulkDeleteSchema = z.object({
   ids: z.array(z.uuid()).min(1),
 });
 
+export const dashboardMemesQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(DEFAULT_PAGE_LIMIT),
+  q: z.string().min(1).optional(),
+  tag: z.string().min(1).optional(),
+  sortBy: z.enum(["createdAt", "description"]).default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export const bulkTagSchema = z.object({
+  ids: z.array(z.uuid()).min(1),
+  tags: z.array(z.string().min(1)).min(1),
+});
+
 // --- Response types ---
 
 export type Meme = typeof memes.$inferSelect & { tags: string[] };
@@ -35,6 +49,12 @@ export type Tag = typeof tags.$inferSelect;
 
 export type MemeResponse = { meme: Meme };
 export type MemeListResponse = { memes: Meme[]; nextCursor: string | null };
+export type DashboardMemesResponse = {
+  memes: Meme[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
 export type TagListResponse = { tags: Tag[] };
 export type UploadUrlResponse = { uploadUrl: string; key: string; imageUrl: string };
 export type ErrorResponse = { error: string };
