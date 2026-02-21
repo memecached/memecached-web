@@ -269,7 +269,7 @@ export function MemeTable() {
                 <TableHead>Description</TableHead>
                 <TableHead>Tags</TableHead>
                 <TableHead>Uploaded</TableHead>
-                <TableHead className="w-12.5" />
+                <TableHead className="w-[50px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -303,14 +303,10 @@ export function MemeTable() {
       {/* Dialogs */}
       <DeleteConfirmationDialog
         open={deleteTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
         count={deleteTarget?.length ?? 0}
         isLoading={deleteMutation.isPending}
-        onConfirm={() => {
-          if (deleteTarget) deleteMutation.mutate(deleteTarget);
-        }}
+        onConfirm={() => { if (deleteTarget) deleteMutation.mutate(deleteTarget); }}
       />
 
       <BulkTagDialog
