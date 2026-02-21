@@ -6,6 +6,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/tag-input";
@@ -13,6 +14,8 @@ import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { SUCCESS_DISPLAY_MS } from "@/lib/constants";
 import { MAX_FILE_SIZE, ACCEPTED_MIME_TYPES } from "@/lib/constants";
 import { createMemeSchema } from "@/lib/validations";
+import type { TagListResponse } from "@/lib/validations";
+import { invalidateAll } from "@/lib/optimistic-cache";
 
 const formSchema = createMemeSchema.omit({ imageUrl: true });
 
@@ -26,12 +29,22 @@ type UploadState =
   | { status: "error"; message: string };
 
 export function UploadForm() {
+  const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploadState, setUploadState] = useState<UploadState>({
     status: "idle",
   });
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
+
+  const tagsQuery = useQuery({
+    queryKey: ["tags"],
+    queryFn: async () => {
+      const res = await fetch("/api/tags");
+      if (!res.ok) throw new Error("Failed to fetch tags");
+      return (await res.json()) as TagListResponse;
+    },
+  });
+  const availableTags = tagsQuery.data?.tags.map((t) => t.name) ?? [];
 
   const {
     register,
@@ -44,13 +57,6 @@ export function UploadForm() {
     mode: "onChange",
     defaultValues: { description: "", tags: [] },
   });
-
-  useEffect(() => {
-    fetch("/api/tags")
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data) => setAvailableTags(data.tags.map((t: { name: string }) => t.name)))
-      .catch(() => {});
-  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[], rejections: FileRejection[]) => {
     if (rejections.length > 0) {
@@ -118,6 +124,7 @@ export function UploadForm() {
       setFile(null);
       resetForm();
       setUploadState({ status: "success", imageUrl });
+      invalidateAll(queryClient);
     } catch (err) {
       setUploadState({
         status: "error",
@@ -210,9 +217,7 @@ export function UploadForm() {
               disabled={uploadState.status === "uploading"}
               {...register("description")}
             />
-            {errors.description && (
-              <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>
-            )}
+            {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>}
           </div>
 
           <div>
@@ -233,9 +238,7 @@ export function UploadForm() {
                 />
               )}
             />
-            {errors.tags && (
-              <p className="mt-1 text-xs text-red-500">{errors.tags.message}</p>
-            )}
+            {errors.tags && <p className="mt-1 text-xs text-red-500">{errors.tags.message}</p>}
           </div>
 
           <div className="flex gap-2">

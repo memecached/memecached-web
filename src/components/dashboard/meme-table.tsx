@@ -2,24 +2,27 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { Loader2, Tags, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DashboardToolbar } from "./dashboard-toolbar";
 import { DashboardPagination } from "./dashboard-pagination";
 import { MemeTableRow } from "./meme-table-row";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { BulkTagDialog } from "./bulk-tag-dialog";
-import type { DashboardMemesResponse, TagListResponse } from "@/lib/validations";
+import type { DashboardMemesResponse, MemeListResponse, TagListResponse } from "@/lib/validations";
+import { cancelAndSnapshot, rollback, invalidateAll } from "@/lib/optimistic-cache";
+import {
+  removeMemeFromGalleryCache,
+  removeMemeFromDashboardCache,
+  updateMemeInGalleryCache,
+  updateMemeInDashboardCache,
+  mergeTagsInGalleryCache,
+  mergeTagsInDashboardCache,
+} from "@/lib/optimistic-updates";
 
 export function MemeTable() {
   const searchParams = useSearchParams();
@@ -74,12 +77,7 @@ export function MemeTable() {
     setPrevKey(queryKey);
   }
 
-  // Mutations
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["dashboard-memes"] });
-    queryClient.invalidateQueries({ queryKey: ["tags"] });
-    queryClient.invalidateQueries({ queryKey: ["memes"] });
-  };
+  // Mutations with optimistic updates
 
   const patchMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { description?: string; tags?: string[] } }) => {
@@ -90,11 +88,26 @@ export function MemeTable() {
       });
       if (!res.ok) throw new Error("Failed to update meme");
     },
-    onSuccess: () => {
-      invalidate();
-      toast.success("Meme updated");
+    onMutate: async ({ id, data }) => {
+      const snapshot = await cancelAndSnapshot(queryClient);
+      for (const [key] of snapshot.galleryQueries) {
+        queryClient.setQueryData(key, (old: InfiniteData<MemeListResponse> | undefined) =>
+          updateMemeInGalleryCache(old, id, data),
+        );
+      }
+      for (const [key] of snapshot.dashboardQueries) {
+        queryClient.setQueryData(key, (old: DashboardMemesResponse | undefined) =>
+          updateMemeInDashboardCache(old, id, data),
+        );
+      }
+      return { snapshot };
     },
-    onError: () => toast.error("Failed to update meme"),
+    onSuccess: () => toast.success("Meme updated"),
+    onError: (_err, _vars, context) => {
+      if (context?.snapshot) rollback(queryClient, context.snapshot);
+      toast.error("Failed to update meme");
+    },
+    onSettled: () => invalidateAll(queryClient),
   });
 
   const deleteMutation = useMutation({
@@ -111,6 +124,21 @@ export function MemeTable() {
         if (!res.ok) throw new Error("Failed to delete memes");
       }
     },
+    onMutate: async (ids) => {
+      const snapshot = await cancelAndSnapshot(queryClient);
+      const idSet = new Set(ids);
+      for (const [key] of snapshot.galleryQueries) {
+        queryClient.setQueryData(key, (old: InfiniteData<MemeListResponse> | undefined) =>
+          removeMemeFromGalleryCache(old, idSet),
+        );
+      }
+      for (const [key] of snapshot.dashboardQueries) {
+        queryClient.setQueryData(key, (old: DashboardMemesResponse | undefined) =>
+          removeMemeFromDashboardCache(old, idSet),
+        );
+      }
+      return { snapshot };
+    },
     onSuccess: (_data, ids) => {
       setDeleteTarget(null);
       setSelectedIds((prev) => {
@@ -118,27 +146,48 @@ export function MemeTable() {
         ids.forEach((id) => next.delete(id));
         return next;
       });
-      invalidate();
       toast.success(ids.length === 1 ? "Meme deleted" : `${ids.length} memes deleted`);
     },
-    onError: () => toast.error("Failed to delete"),
+    onError: (_err, _vars, context) => {
+      if (context?.snapshot) rollback(queryClient, context.snapshot);
+      toast.error("Failed to delete");
+    },
+    onSettled: () => invalidateAll(queryClient),
   });
 
   const bulkTagMutation = useMutation({
-    mutationFn: async (tagList: string[]) => {
+    mutationFn: async ({ tags: tagList, ids }: { tags: string[]; ids: string[] }) => {
       const res = await fetch("/api/memes/bulk-tag", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(selectedIds), tags: tagList }),
+        body: JSON.stringify({ ids, tags: tagList }),
       });
       if (!res.ok) throw new Error("Failed to add tags");
     },
+    onMutate: async ({ tags: tagList, ids }) => {
+      const snapshot = await cancelAndSnapshot(queryClient);
+      const idSet = new Set(ids);
+      for (const [key] of snapshot.galleryQueries) {
+        queryClient.setQueryData(key, (old: InfiniteData<MemeListResponse> | undefined) =>
+          mergeTagsInGalleryCache(old, idSet, tagList),
+        );
+      }
+      for (const [key] of snapshot.dashboardQueries) {
+        queryClient.setQueryData(key, (old: DashboardMemesResponse | undefined) =>
+          mergeTagsInDashboardCache(old, idSet, tagList),
+        );
+      }
+      return { snapshot };
+    },
     onSuccess: () => {
       setBulkTagOpen(false);
-      invalidate();
       toast.success("Tags added");
     },
-    onError: () => toast.error("Failed to add tags"),
+    onError: (_err, _vars, context) => {
+      if (context?.snapshot) rollback(queryClient, context.snapshot);
+      toast.error("Failed to add tags");
+    },
+    onSettled: () => invalidateAll(queryClient),
   });
 
   // Selection helpers
@@ -183,12 +232,7 @@ export function MemeTable() {
           <Trash2 className="h-4 w-4" />
           Delete
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={selectedIds.size === 0}
-          onClick={() => setBulkTagOpen(true)}
-        >
+        <Button variant="outline" size="sm" disabled={selectedIds.size === 0} onClick={() => setBulkTagOpen(true)}>
           <Tags className="h-4 w-4" />
           Add tags
         </Button>
@@ -271,7 +315,7 @@ export function MemeTable() {
         count={selectedIds.size}
         isLoading={bulkTagMutation.isPending}
         suggestions={tagNames}
-        onConfirm={(tagList) => bulkTagMutation.mutate(tagList)}
+        onConfirm={(tagList) => bulkTagMutation.mutate({ tags: tagList, ids: Array.from(selectedIds) })}
       />
     </div>
   );

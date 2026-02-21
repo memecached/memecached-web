@@ -98,7 +98,7 @@ export async function PATCH(
       description: updatedMeme.description,
       createdAt: updatedMeme.createdAt,
       updatedAt: updatedMeme.updatedAt,
-      tags: resolvedTags.map((t) => t.name),
+      tags: resolvedTags.map((t) => t.name).sort(),
     };
   });
 

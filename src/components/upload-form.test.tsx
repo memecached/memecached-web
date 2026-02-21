@@ -2,8 +2,16 @@ import "@testing-library/jest-dom/vitest";
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { UploadForm } from "./upload-form";
 import { mockFetch } from "@/lib/test-utils";
+
+function renderWithQueryClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 // jsdom doesn't implement URL.createObjectURL
 if (typeof URL.createObjectURL === "undefined") {
@@ -87,7 +95,7 @@ describe("UploadForm", () => {
 
   test("renders dropzone in idle state", () => {
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     expect(screen.getByText(/drag & drop an image/i)).toBeInTheDocument();
     expect(screen.getByText(/max 2 MB/i)).toBeInTheDocument();
@@ -96,7 +104,7 @@ describe("UploadForm", () => {
   test("shows preview, form fields, and upload button after selecting a valid file", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
 
@@ -110,7 +118,7 @@ describe("UploadForm", () => {
   test("hides dropzone when previewing", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
 
@@ -120,7 +128,7 @@ describe("UploadForm", () => {
   test("resets to idle state when cancel is clicked", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
 
@@ -135,7 +143,7 @@ describe("UploadForm", () => {
   test("upload button is disabled when form is empty", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
 
@@ -145,7 +153,7 @@ describe("UploadForm", () => {
   test("upload button is disabled when only description is filled", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
     await user.type(screen.getByLabelText(/description/i), "A funny meme");
@@ -158,7 +166,7 @@ describe("UploadForm", () => {
   test("upload button is disabled when only tags are filled", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
     const tagInput = screen.getByLabelText(/tags/i);
@@ -173,7 +181,7 @@ describe("UploadForm", () => {
   test("upload button is enabled when both description and tags are filled", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
     await fillForm(user);
@@ -192,7 +200,7 @@ describe("UploadForm", () => {
 
     mockFetchDefaults().on("s3.amazonaws.com", s3Promise);
 
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
     await fillForm(user);
@@ -224,7 +232,7 @@ describe("UploadForm", () => {
 
     mockFetchDefaults();
 
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
     await fillForm(user, "A funny cat meme", ["funny", "cats"]);
@@ -264,7 +272,7 @@ describe("UploadForm", () => {
     const user = userEvent.setup();
     mockFetchDefaults().on("/api/upload-url", Response.json({ error: "Unauthorized" }, { status: 401 }));
 
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
     await fillForm(user);
@@ -286,7 +294,7 @@ describe("UploadForm", () => {
 
     mockFetchDefaults().on("s3.amazonaws.com", new Response(null, { status: 403 }));
 
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
     await fillForm(user);
@@ -308,7 +316,7 @@ describe("UploadForm", () => {
 
     mockFetchDefaults().on("/api/memes", Response.json({ error: "Validation failed" }, { status: 422 }));
 
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
     await fillForm(user);
@@ -329,7 +337,7 @@ describe("UploadForm", () => {
     const user = userEvent.setup();
     mockFetchDefaults().on("/api/upload-url", Response.json({ error: "Unauthorized" }, { status: 401 }));
 
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
     await fillForm(user);
@@ -356,7 +364,7 @@ describe("UploadForm", () => {
     const user = userEvent.setup();
     mockFetchDefaults().on("/api/upload-url", () => Promise.reject(new Error("Network error")));
 
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
     await fillForm(user);
@@ -381,7 +389,7 @@ describe("UploadForm", () => {
     const constants = await import("@/lib/constants");
     vi.spyOn(constants, "SUCCESS_DISPLAY_MS", "get").mockReturnValue(0);
 
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
     await fillForm(user);
@@ -402,7 +410,7 @@ describe("UploadForm", () => {
   test("shows autocomplete suggestions when typing", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
 
@@ -427,7 +435,7 @@ describe("UploadForm", () => {
   test("adds tag on Enter, displays as badge, clears input", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
 
@@ -447,7 +455,7 @@ describe("UploadForm", () => {
   test("removes tag when badge X is clicked", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
 
@@ -470,7 +478,7 @@ describe("UploadForm", () => {
   test("excludes already-selected tags from suggestions", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
 
@@ -501,7 +509,7 @@ describe("UploadForm", () => {
   test("allows creating a new tag not in suggestions", async () => {
     const user = userEvent.setup();
     mockFetchDefaults();
-    render(<UploadForm />);
+    renderWithQueryClient(<UploadForm />);
 
     await selectFileAndWaitForForm(user);
 
