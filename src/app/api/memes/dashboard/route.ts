@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     description: m.description,
     createdAt: m.createdAt,
     updatedAt: m.updatedAt,
-    tags: tagMap[m.id] || [],
+    tags: (tagMap[m.id] || []).sort(),
   }));
 
   return apiSuccess<DashboardMemesResponse>({

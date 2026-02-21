@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       description: meme.description,
       createdAt: meme.createdAt,
       updatedAt: meme.updatedAt,
-      tags: resolvedTags.map((t) => t.name),
+      tags: resolvedTags.map((t) => t.name).sort(),
     };
   });
 
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
     description: m.description,
     createdAt: m.createdAt,
     updatedAt: m.updatedAt,
-    tags: tagMap[m.id] || [],
+    tags: (tagMap[m.id] || []).sort(),
   }));
 
   return apiSuccess<MemeListResponse>({ memes: memesWithTags, nextCursor });
