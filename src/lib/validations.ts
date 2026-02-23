@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } from "./constants";
-import { memes, tags } from "@/db/schema";
+import { memes, tags, users } from "@/db/schema";
 
 // --- Request schemas ---
 
@@ -41,6 +41,11 @@ export const bulkTagSchema = z.object({
   tags: z.array(z.string().min(1)).min(1),
 });
 
+export const updateUserSchema = z.object({
+  status: z.enum(["pending", "approved", "rejected"]).optional(),
+  role: z.enum(["user", "admin"]).optional(),
+});
+
 // --- Response types ---
 
 export type Meme = typeof memes.$inferSelect & { tags: string[] };
@@ -56,10 +61,14 @@ export type DashboardMemesResponse = {
   pageSize: number;
 };
 export type TagListResponse = { tags: Tag[] };
+export type AdminUser = typeof users.$inferSelect;
+export type AdminUsersResponse = { users: AdminUser[] };
+export type AdminUserResponse = { user: AdminUser };
 export type UploadUrlResponse = { uploadUrl: string; key: string; imageUrl: string };
 export type ErrorResponse = { error: string };
+export type RedirectResponse = { redirect: string };
 
-export type ApiResponse<T> = T | ErrorResponse;
+export type ApiResponse<T> = T | ErrorResponse | RedirectResponse;
 
 // --- Response helpers ---
 

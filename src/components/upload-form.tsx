@@ -16,6 +16,7 @@ import { MAX_FILE_SIZE, ACCEPTED_MIME_TYPES } from "@/lib/constants";
 import { createMemeSchema } from "@/lib/validations";
 import type { TagListResponse } from "@/lib/validations";
 import { invalidateAll } from "@/lib/optimistic-cache";
+import { apiFetch } from "@/lib/api-fetch";
 
 const formSchema = createMemeSchema.omit({ imageUrl: true });
 
@@ -39,7 +40,7 @@ export function UploadForm() {
   const tagsQuery = useQuery({
     queryKey: ["tags"],
     queryFn: async () => {
-      const res = await fetch("/api/tags");
+      const res = await apiFetch("/api/tags");
       if (!res.ok) throw new Error("Failed to fetch tags");
       return (await res.json()) as TagListResponse;
     },
@@ -85,7 +86,7 @@ export function UploadForm() {
     setUploadState({ status: "uploading" });
 
     try {
-      const res = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}`);
+      const res = await apiFetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}`);
 
       if (!res.ok) {
         const body = await res.json();
@@ -104,7 +105,7 @@ export function UploadForm() {
         throw new Error("Upload to S3 failed");
       }
 
-      const memeRes = await fetch("/api/memes", {
+      const memeRes = await apiFetch("/api/memes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
