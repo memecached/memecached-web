@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/logout-button";
 import { MemeCard } from "@/components/meme-card";
 import type { MemeListResponse, TagListResponse } from "@/lib/validations";
+import { apiFetch } from "@/lib/api-fetch";
 
 export function Gallery() {
   const searchParams = useSearchParams();
@@ -38,7 +39,7 @@ export function Gallery() {
   const tagsQuery = useQuery({
     queryKey: ["tags"],
     queryFn: async () => {
-      const res = await fetch("/api/tags");
+      const res = await apiFetch("/api/tags");
       if (!res.ok) throw new Error("Failed to fetch tags");
       return (await res.json()) as TagListResponse;
     },
@@ -51,7 +52,7 @@ export function Gallery() {
       if (q) params.set("q", q);
       if (tag) params.set("tag", tag);
       if (pageParam) params.set("cursor", pageParam);
-      const res = await fetch(`/api/memes?${params.toString()}`);
+      const res = await apiFetch(`/api/memes?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch memes");
       return (await res.json()) as MemeListResponse;
     },
@@ -82,6 +83,9 @@ export function Gallery() {
             </Button>
             <Button asChild variant="outline">
               <Link href="/upload">Upload</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/users">Admin</Link>
             </Button>
             <LogoutButton />
           </div>

@@ -5,23 +5,20 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/logout-button";
-import { MemeTable } from "@/components/dashboard/meme-table";
+import { UserTable } from "@/components/admin/user-table";
 
-function DashboardContent() {
+function AdminUsersContent() {
   return (
     <div className="min-h-screen bg-zinc-50 font-sans dark:bg-black">
       <header className="border-b bg-white dark:bg-black">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <h1 className="text-xl font-bold">Dashboard</h1>
+          <h1 className="text-xl font-bold">Admin - Users</h1>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline">
               <Link href="/">Gallery</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/upload">Upload</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/admin/users">Admin</Link>
+              <Link href="/dashboard">Dashboard</Link>
             </Button>
             <LogoutButton />
           </div>
@@ -29,13 +26,13 @@ function DashboardContent() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6">
-        <MemeTable />
+        <UserTable />
       </main>
     </div>
   );
 }
 
-export default function DashboardPage() {
+export default function AdminUsersPage() {
   return (
     <Suspense
       fallback={
@@ -44,7 +41,7 @@ export default function DashboardPage() {
         </div>
       }
     >
-      <DashboardContent />
+      <AdminUsersContent />
     </Suspense>
   );
 }

@@ -15,6 +15,7 @@ import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { BulkTagDialog } from "./bulk-tag-dialog";
 import type { DashboardMemesResponse, MemeListResponse, TagListResponse } from "@/lib/validations";
 import { cancelAndSnapshot, rollback, invalidateAll } from "@/lib/optimistic-cache";
+import { apiFetch } from "@/lib/api-fetch";
 import {
   removeMemeFromGalleryCache,
   removeMemeFromDashboardCache,
@@ -48,7 +49,7 @@ export function MemeTable() {
       params.set("sortBy", sortBy);
       params.set("sortOrder", sortOrder);
       params.set("page", String(page));
-      const res = await fetch(`/api/memes/dashboard?${params.toString()}`);
+      const res = await apiFetch(`/api/memes/dashboard?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch memes");
       return (await res.json()) as DashboardMemesResponse;
     },
@@ -58,7 +59,7 @@ export function MemeTable() {
   const tagsQuery = useQuery({
     queryKey: ["tags"],
     queryFn: async () => {
-      const res = await fetch("/api/tags");
+      const res = await apiFetch("/api/tags");
       if (!res.ok) throw new Error("Failed to fetch tags");
       return (await res.json()) as TagListResponse;
     },
@@ -81,7 +82,7 @@ export function MemeTable() {
 
   const patchMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { description?: string; tags?: string[] } }) => {
-      const res = await fetch(`/api/memes/${id}`, {
+      const res = await apiFetch(`/api/memes/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -113,10 +114,10 @@ export function MemeTable() {
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
       if (ids.length === 1) {
-        const res = await fetch(`/api/memes/${ids[0]}`, { method: "DELETE" });
+        const res = await apiFetch(`/api/memes/${ids[0]}`, { method: "DELETE" });
         if (!res.ok) throw new Error("Failed to delete meme");
       } else {
-        const res = await fetch("/api/memes/bulk-delete", {
+        const res = await apiFetch("/api/memes/bulk-delete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids }),
@@ -157,7 +158,7 @@ export function MemeTable() {
 
   const bulkTagMutation = useMutation({
     mutationFn: async ({ tags: tagList, ids }: { tags: string[]; ids: string[] }) => {
-      const res = await fetch("/api/memes/bulk-tag", {
+      const res = await apiFetch("/api/memes/bulk-tag", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids, tags: tagList }),

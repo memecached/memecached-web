@@ -69,10 +69,7 @@ describe("Gallery Page", () => {
       .on("/api/tags", () => Response.json({ tags: [] }))
       .on("/api/memes", () =>
         Response.json({
-          memes: [
-            makeMeme({ id: "1", description: "Cat meme" }),
-            makeMeme({ id: "2", description: "Dog meme" }),
-          ],
+          memes: [makeMeme({ id: "1", description: "Cat meme" }), makeMeme({ id: "2", description: "Dog meme" })],
           nextCursor: null,
         }),
       );
@@ -195,9 +192,7 @@ describe("Gallery Page", () => {
 
   test("tag badge click updates URL", async () => {
     mockFetch()
-      .on("/api/tags", () =>
-        Response.json({ tags: [{ id: "t1", name: "funny" }] }),
-      )
+      .on("/api/tags", () => Response.json({ tags: [{ id: "t1", name: "funny" }] }))
       .on("/api/memes", () => Response.json({ memes: [], nextCursor: null }));
 
     renderPage();
@@ -221,17 +216,13 @@ describe("Gallery Page", () => {
     renderPage();
 
     await waitFor(() => {
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/memes"),
-      );
+      expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/memes"), undefined);
     });
 
-    const memesCall = vi.mocked(globalThis.fetch).mock.calls.find(
-      (call) => {
-        const url = typeof call[0] === "string" ? call[0] : "";
-        return url.includes("/api/memes");
-      },
-    );
+    const memesCall = vi.mocked(globalThis.fetch).mock.calls.find((call) => {
+      const url = typeof call[0] === "string" ? call[0] : "";
+      return url.includes("/api/memes");
+    });
 
     expect(memesCall).toBeDefined();
     const url = memesCall![0] as string;
