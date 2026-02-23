@@ -249,7 +249,7 @@ describe("UploadForm", () => {
     });
 
     const fetchSpy = vi.mocked(globalThis.fetch);
-    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining("/api/upload-url?filename=meme.png"));
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining("/api/upload-url?filename=meme.png"), undefined);
     expect(fetchSpy).toHaveBeenCalledWith(
       "https://s3.amazonaws.com/signed",
       expect.objectContaining({ method: "PUT" }),
@@ -416,7 +416,7 @@ describe("UploadForm", () => {
 
     // Wait for tags to be fetched
     await waitFor(() => {
-      expect(globalThis.fetch).toHaveBeenCalledWith("/api/tags");
+      expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/tags"), undefined);
     });
 
     const tagInput = screen.getByLabelText(/tags/i);
@@ -484,7 +484,7 @@ describe("UploadForm", () => {
 
     // Wait for tags to be fetched
     await waitFor(() => {
-      expect(globalThis.fetch).toHaveBeenCalledWith("/api/tags");
+      expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/tags"), undefined);
     });
 
     const tagInput = screen.getByLabelText(/tags/i);

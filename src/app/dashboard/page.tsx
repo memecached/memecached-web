@@ -20,6 +20,9 @@ function DashboardContent() {
             <Button asChild variant="outline">
               <Link href="/upload">Upload</Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/users">Admin</Link>
+            </Button>
             <LogoutButton />
           </div>
         </div>

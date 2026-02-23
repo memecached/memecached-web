@@ -15,6 +15,13 @@
       "when": 1770964098562,
       "tag": "0001_rare_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771741635248,
+      "tag": "0002_happy_yellow_claw",
+      "breakpoints": true
     }
   ]
 }
