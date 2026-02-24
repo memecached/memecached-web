@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
@@ -61,6 +61,25 @@ export function Gallery() {
   });
 
   const memes = memesQuery.data?.pages.flatMap((p) => p.memes) ?? [];
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && memesQuery.hasNextPage && !memesQuery.isFetchingNextPage) {
+          memesQuery.fetchNextPage();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [memesQuery.hasNextPage, memesQuery.isFetchingNextPage, memesQuery.fetchNextPage]);
 
   const toggleTag = (tagName: string) => {
     const params = new URLSearchParams(searchParams);
@@ -151,16 +170,13 @@ export function Gallery() {
           </div>
         )}
 
-        {/* Load more */}
-        {memesQuery.hasNextPage && (
-          <div className="flex justify-center">
-            <Button
-              variant="outline"
-              onClick={() => memesQuery.fetchNextPage()}
-              disabled={memesQuery.isFetchingNextPage}
-            >
-              {memesQuery.isFetchingNextPage ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load more"}
-            </Button>
+        {/* Sentinel for infinite scroll */}
+        <div ref={sentinelRef} />
+
+        {/* Fetching next page indicator */}
+        {memesQuery.isFetchingNextPage && (
+          <div className="flex justify-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         )}
       </main>
