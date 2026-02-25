@@ -7,8 +7,6 @@ import { memes, tags, users } from "@/db/schema";
 
 export const createMemeSchema = z.object({
   imageUrl: z.url(),
-  imageWidth: z.number().int().positive().optional(),
-  imageHeight: z.number().int().positive().optional(),
   description: z.string().min(1),
   tags: z.array(z.string().min(1)).min(1),
 });

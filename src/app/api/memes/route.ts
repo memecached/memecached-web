@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { imageSize } from "image-size";
 import { db } from "@/db";
 import { memes, tags, memeTags } from "@/db/schema";
 import { and, desc, eq, ilike, inArray, lt } from "drizzle-orm";
@@ -28,7 +29,19 @@ export async function POST(request: NextRequest) {
     return apiError(parsed.error.issues[0].message, 400);
   }
 
-  const { imageUrl, imageWidth, imageHeight, description, tags: tagNames } = parsed.data;
+  const { imageUrl, description, tags: tagNames } = parsed.data;
+
+  let imageWidth: number | undefined;
+  let imageHeight: number | undefined;
+  try {
+    const res = await fetch(imageUrl, { headers: { Range: "bytes=0-4095" } });
+    const buffer = Buffer.from(await res.arrayBuffer());
+    const { width, height } = imageSize(buffer);
+    imageWidth = width;
+    imageHeight = height;
+  } catch {
+    // dimensions remain undefined, stored as null
+  }
 
   const result = await db.transaction(async (tx) => {
     const [meme] = await tx

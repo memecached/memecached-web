@@ -18,7 +18,7 @@ import type { TagListResponse } from "@/lib/validations";
 import { invalidateAll } from "@/lib/optimistic-cache";
 import { apiFetch } from "@/lib/api-fetch";
 
-const formSchema = createMemeSchema.omit({ imageUrl: true, imageWidth: true, imageHeight: true });
+const formSchema = createMemeSchema.omit({ imageUrl: true });
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -33,7 +33,6 @@ export function UploadForm() {
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
   const [uploadState, setUploadState] = useState<UploadState>({
     status: "idle",
   });
@@ -79,12 +78,6 @@ export function UploadForm() {
     setFile(f);
     setPreview(URL.createObjectURL(f));
     setUploadState({ status: "previewing" });
-    createImageBitmap(f)
-      .then((bitmap) => {
-        setDimensions({ width: bitmap.width, height: bitmap.height });
-        bitmap.close();
-      })
-      .catch(() => setDimensions(null));
   }, []);
 
   const onSubmit = async (data: FormValues) => {
@@ -117,7 +110,6 @@ export function UploadForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageUrl,
-          ...(dimensions && { imageWidth: dimensions.width, imageHeight: dimensions.height }),
           description: data.description,
           tags: data.tags,
         }),
@@ -131,7 +123,6 @@ export function UploadForm() {
       if (preview) URL.revokeObjectURL(preview);
       setPreview(null);
       setFile(null);
-      setDimensions(null);
       resetForm();
       setUploadState({ status: "success", imageUrl });
       invalidateAll(queryClient);
@@ -157,7 +148,6 @@ export function UploadForm() {
     if (preview) URL.revokeObjectURL(preview);
     setFile(null);
     setPreview(null);
-    setDimensions(null);
     resetForm();
     setUploadState({ status: "idle" });
   };
