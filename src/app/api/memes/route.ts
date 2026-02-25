@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     return apiError(parsed.error.issues[0].message, 400);
   }
 
-  const { imageUrl, description, tags: tagNames } = parsed.data;
+  const { imageUrl, imageWidth, imageHeight, description, tags: tagNames } = parsed.data;
 
   const result = await db.transaction(async (tx) => {
     const [meme] = await tx
@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
       .values({
         userId: dbUser.id,
         imageUrl,
+        imageWidth,
+        imageHeight,
         description,
       })
       .returning();
@@ -66,6 +68,8 @@ export async function POST(request: NextRequest) {
       id: meme.id,
       userId: meme.userId,
       imageUrl: meme.imageUrl,
+      imageWidth: meme.imageWidth,
+      imageHeight: meme.imageHeight,
       description: meme.description,
       createdAt: meme.createdAt,
       updatedAt: meme.updatedAt,
@@ -150,6 +154,8 @@ export async function GET(request: NextRequest) {
     id: m.id,
     userId: m.userId,
     imageUrl: m.imageUrl,
+    imageWidth: m.imageWidth,
+    imageHeight: m.imageHeight,
     description: m.description,
     createdAt: m.createdAt,
     updatedAt: m.updatedAt,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Loader2, MoreHorizontal, Pencil, Trash2, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,10 +77,11 @@ export function MemeTableRow({
       </TableCell>
       <TableCell>
         <div className="relative h-12 w-12">
-          <img
+          <Image
             src={meme.imageUrl}
             alt={meme.description}
-            className={`h-12 w-12 rounded object-cover transition-[filter] ${isSaving ? "blur-[2px]" : ""}`}
+            fill
+            className={`rounded object-cover transition-[filter] ${isSaving ? "blur-[2px]" : ""}`}
           />
           {isSaving && (
             <div className="absolute inset-0 flex items-center justify-center">

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, primaryKey, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, timestamp, primaryKey, index } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -17,6 +17,8 @@ export const memes = pgTable(
       .notNull()
       .references(() => users.id),
     imageUrl: text("image_url").notNull(),
+    imageWidth: integer("image_width"),
+    imageHeight: integer("image_height"),
     description: text("description").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })

@@ -79,6 +79,8 @@ export async function GET(request: NextRequest) {
     id: m.id,
     userId: m.userId,
     imageUrl: m.imageUrl,
+    imageWidth: m.imageWidth,
+    imageHeight: m.imageHeight,
     description: m.description,
     createdAt: m.createdAt,
     updatedAt: m.updatedAt,
