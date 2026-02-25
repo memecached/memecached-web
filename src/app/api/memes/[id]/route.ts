@@ -95,6 +95,8 @@ export async function PATCH(
       id: updatedMeme.id,
       userId: updatedMeme.userId,
       imageUrl: updatedMeme.imageUrl,
+      imageWidth: updatedMeme.imageWidth,
+      imageHeight: updatedMeme.imageHeight,
       description: updatedMeme.description,
       createdAt: updatedMeme.createdAt,
       updatedAt: updatedMeme.updatedAt,
