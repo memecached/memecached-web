@@ -59,6 +59,12 @@ export function UploadForm() {
     defaultValues: { description: "", tags: [] },
   });
 
+  const acceptFile = useCallback((f: File) => {
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+    setUploadState({ status: "previewing" });
+  }, []);
+
   const onDrop = useCallback((acceptedFiles: File[], rejections: FileRejection[]) => {
     if (rejections.length > 0) {
       const error = rejections[0].errors[0];
@@ -74,11 +80,32 @@ export function UploadForm() {
 
     const f = acceptedFiles[0];
     if (!f) return;
+    acceptFile(f);
+  }, [acceptFile]);
 
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
-    setUploadState({ status: "previewing" });
-  }, []);
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      if (uploadState.status !== "idle" && uploadState.status !== "error") return;
+      const item = Array.from(e.clipboardData?.items ?? []).find(
+        (i) => i.kind === "file" && i.type.startsWith("image/"),
+      );
+      if (!item) return;
+      const f = item.getAsFile();
+      if (!f) return;
+      if (f.size > MAX_FILE_SIZE) {
+        toast.error("File exceeds 2 MB limit");
+        return;
+      }
+      if (!Object.keys(ACCEPTED_MIME_TYPES).includes(f.type)) {
+        toast.error("Invalid file type. Use PNG, JPEG, GIF, or WebP");
+        return;
+      }
+      acceptFile(f);
+    };
+
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [uploadState.status, acceptFile]);
 
   const onSubmit = async (data: FormValues) => {
     if (!file) return;
@@ -181,7 +208,7 @@ export function UploadForm() {
           ) : (
             <>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">Drag & drop an image, or click to select</p>
-              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">PNG, JPEG, GIF, WebP — max 2 MB</p>
+              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">PNG, JPEG, GIF, WebP — max 2 MB — or paste from clipboard</p>
             </>
           )}
         </div>
