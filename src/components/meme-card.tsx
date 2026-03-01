@@ -42,6 +42,7 @@ export function MemeCard({ meme }: { meme: Meme }) {
           <Button
             size="sm"
             variant="secondary"
+            className="cursor-pointer"
             onClick={() =>
               copyImage(meme.imageUrl)
                 .then(() => toast.success("Image copied"))
