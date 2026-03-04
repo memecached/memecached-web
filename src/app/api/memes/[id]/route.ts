@@ -7,17 +7,14 @@ import { deleteS3Object } from "@/lib/s3";
 import { extractS3KeyFromUrl } from "@/lib/constants";
 import { updateMemeSchema, apiSuccess, apiError, type MemeResponse } from "@/lib/validations";
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { dbUser, error } = await getAuthenticatedUser();
   if (error) return error;
 
   const { id } = await params;
 
   const existing = await db.query.memes.findFirst({
-    where: and(eq(memes.id, id), eq(memes.userId, dbUser.id)),
+    where: dbUser.role === "admin" ? eq(memes.id, id) : and(eq(memes.id, id), eq(memes.userId, dbUser.id)),
   });
 
   if (!existing) {
@@ -42,11 +39,7 @@ export async function PATCH(
     let updatedMeme = existing;
 
     if (description !== undefined) {
-      const [updated] = await tx
-        .update(memes)
-        .set({ description })
-        .where(eq(memes.id, id))
-        .returning();
+      const [updated] = await tx.update(memes).set({ description }).where(eq(memes.id, id)).returning();
       updatedMeme = updated;
     }
 
@@ -75,11 +68,7 @@ export async function PATCH(
           );
 
         // Insert new junction rows
-        await tx
-          .insert(memeTags)
-          .values(
-            resolvedTags.map((t) => ({ memeId: id, tagId: t.id })),
-          );
+        await tx.insert(memeTags).values(resolvedTags.map((t) => ({ memeId: id, tagId: t.id })));
       }
     } else {
       // Fetch existing tags
@@ -107,17 +96,14 @@ export async function PATCH(
   return apiSuccess<MemeResponse>({ meme: result });
 }
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { dbUser, error } = await getAuthenticatedUser();
   if (error) return error;
 
   const { id } = await params;
 
   const existing = await db.query.memes.findFirst({
-    where: and(eq(memes.id, id), eq(memes.userId, dbUser.id)),
+    where: dbUser.role === "admin" ? eq(memes.id, id) : and(eq(memes.id, id), eq(memes.userId, dbUser.id)),
   });
 
   if (!existing) {

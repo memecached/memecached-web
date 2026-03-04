@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const { dbUser, error } = await getAuthenticatedUser();
+  const { error } = await getAuthenticatedUser();
   if (error) return error;
 
   const rawParams = Object.fromEntries(request.nextUrl.searchParams.entries());
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 
   const { cursor, limit, q, tag } = parsed.data;
 
-  const conditions = [eq(memes.userId, dbUser.id)];
+  const conditions = [];
 
   if (cursor) {
     conditions.push(lt(memes.createdAt, new Date(cursor)));
