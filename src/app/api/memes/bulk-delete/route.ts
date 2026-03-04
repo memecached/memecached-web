@@ -25,11 +25,11 @@ export async function POST(request: NextRequest) {
 
   const { ids } = parsed.data;
 
-  // Fetch all memes that belong to this user
-  const userMemes = await db
-    .select({ id: memes.id, imageUrl: memes.imageUrl })
-    .from(memes)
-    .where(and(inArray(memes.id, ids), eq(memes.userId, dbUser.id)));
+  const whereClause =
+    dbUser.role === "admin" ? inArray(memes.id, ids) : and(inArray(memes.id, ids), eq(memes.userId, dbUser.id));
+
+  // Fetch all memes that belong to this user (or any meme if admin)
+  const userMemes = await db.select({ id: memes.id, imageUrl: memes.imageUrl }).from(memes).where(whereClause);
 
   if (userMemes.length !== ids.length) {
     return apiError("Some memes not found or not owned by user", 403);
@@ -38,9 +38,7 @@ export async function POST(request: NextRequest) {
   const s3Keys = userMemes.map((m) => extractS3KeyFromUrl(m.imageUrl));
 
   // Delete from DB first (cascade deletes meme_tags)
-  await db
-    .delete(memes)
-    .where(and(inArray(memes.id, ids), eq(memes.userId, dbUser.id)));
+  await db.delete(memes).where(whereClause);
 
   // Then batch-delete from S3
   await deleteS3Objects(s3Keys);

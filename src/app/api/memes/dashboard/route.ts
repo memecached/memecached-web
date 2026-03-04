@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   const { page, pageSize, q, tag, sortBy, sortOrder } = parsed.data;
 
-  const conditions = [eq(memes.userId, dbUser.id)];
+  const conditions = dbUser.role === "admin" ? [] : [eq(memes.userId, dbUser.id)];
 
   if (q) {
     conditions.push(ilike(memes.description, `%${q}%`));
