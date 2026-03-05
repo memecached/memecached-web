@@ -13,6 +13,8 @@ function makeMeme(overrides: Partial<Meme> = {}): Meme {
     id: "1",
     userId: "u1",
     imageUrl: "https://cdn.example.com/meme.png",
+    imageWidth: null,
+    imageHeight: null,
     description: "A funny cat meme",
     tags: ["funny", "cats"],
     createdAt: new Date(),
