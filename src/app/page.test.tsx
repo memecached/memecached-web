@@ -22,14 +22,12 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-vi.mock("@/components/logout-button", () => ({
-  LogoutButton: () => <button>Log out</button>,
-}));
-
 function makeMeme(overrides: Partial<Meme> & { id: string }): Meme {
   return {
     userId: "u1",
     imageUrl: `https://cdn.example.com/${overrides.id}.png`,
+    imageWidth: null,
+    imageHeight: null,
     description: `Meme ${overrides.id}`,
     tags: ["funny"],
     createdAt: new Date().toISOString() as unknown as Date,

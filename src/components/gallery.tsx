@@ -2,13 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { Search, Loader2, ImageOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { LogoutButton } from "@/components/logout-button";
 import { MemeCard } from "@/components/meme-card";
 import type { MemeListResponse, TagListResponse } from "@/lib/validations";
 import { apiFetch } from "@/lib/api-fetch";
@@ -93,24 +90,6 @@ export function Gallery() {
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans dark:bg-black">
-      <header className="border-b bg-white dark:bg-black">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <h1 className="text-xl font-bold">memecached</h1>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline">
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/upload">Upload</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/admin/users">Admin</Link>
-            </Button>
-            <LogoutButton />
-          </div>
-        </div>
-      </header>
-
       <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
         {/* Search bar */}
         <div className="relative">

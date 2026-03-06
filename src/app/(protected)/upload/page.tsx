@@ -1,19 +1,9 @@
-import { LogoutButton } from "@/components/logout-button";
 import { UploadForm } from "@/components/upload-form";
 import { ImageUp } from "lucide-react";
 
 export default function UploadPage() {
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-black">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
-        <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between px-6">
-          <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-            memecached
-          </span>
-          <LogoutButton />
-        </div>
-      </header>
-
       <main className="flex flex-1 flex-col items-center px-6 py-16">
         <div className="w-full max-w-md space-y-8">
           <div className="flex flex-col items-center gap-2 text-center">

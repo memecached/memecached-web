@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <rect width="120" height="120" fill="black" rx="10"/>
+  <text x="60" y="52" font-family="Arial, sans-serif" font-weight="bold" font-size="30" fill="white" text-anchor="middle">meme</text>
+  <text x="60" y="88" font-family="Arial, sans-serif" font-weight="bold" font-size="30" fill="#00CFFF" text-anchor="middle">cached</text>
+</svg>
