@@ -65,6 +65,7 @@ export type AdminUser = typeof users.$inferSelect;
 export type AdminUsersResponse = { users: AdminUser[] };
 export type AdminUserResponse = { user: AdminUser };
 export type UploadUrlResponse = { uploadUrl: string; key: string; imageUrl: string };
+export type SuggestDescriptionResponse = { description: string };
 export type ErrorResponse = { error: string };
 export type RedirectResponse = { redirect: string };
 
