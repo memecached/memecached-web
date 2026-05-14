@@ -3,12 +3,12 @@ import { ImageUp } from "lucide-react";
 
 export default function UploadPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-black">
-      <main className="flex flex-1 flex-col items-center px-6 py-16">
-        <div className="w-full max-w-md space-y-8">
+    <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-950 dark:bg-[#050706] dark:text-zinc-50">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center px-4 py-8 sm:px-6">
+        <div className="w-full max-w-xl space-y-6">
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900">
-              <ImageUp className="h-6 w-6 text-zinc-500 dark:text-zinc-400" />
+            <div className="flex size-11 items-center justify-center rounded-md border border-emerald-500/35 bg-white text-emerald-700 dark:border-emerald-400/35 dark:bg-[#0a0d0b] dark:text-emerald-300">
+              <ImageUp className="h-5 w-5" />
             </div>
             <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
               Upload a meme

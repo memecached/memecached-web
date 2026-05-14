@@ -76,12 +76,13 @@ export function MemeTableRow({
         />
       </TableCell>
       <TableCell>
-        <div className="relative h-12 w-12">
+        <div className="relative h-12 w-12 overflow-hidden rounded-md border border-zinc-200 dark:border-emerald-400/20">
           <Image
             src={meme.imageUrl}
             alt={meme.description}
             fill
-            className={`rounded object-cover transition-[filter] ${isSaving ? "blur-[2px]" : ""}`}
+            className={`object-cover transition-[filter] ${isSaving ? "blur-[2px]" : ""}`}
+            unoptimized
           />
           {isSaving && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -98,7 +99,7 @@ export function MemeTableRow({
             className="h-8"
           />
         ) : (
-          <span className="line-clamp-2">{meme.description}</span>
+          <span className="line-clamp-2 text-zinc-800 dark:text-zinc-200">{meme.description}</span>
         )}
       </TableCell>
       <TableCell className="max-w-[250px]">
@@ -112,7 +113,11 @@ export function MemeTableRow({
         ) : (
           <div className="flex flex-wrap gap-1">
             {meme.tags.map((tag) => (
-              <Badge key={tag} variant="secondary">
+              <Badge
+                key={tag}
+                variant="secondary"
+                className="rounded-sm border border-emerald-500/35 bg-zinc-50 text-zinc-600 dark:border-emerald-400/35 dark:bg-[#050706] dark:text-emerald-100/70"
+              >
                 {tag}
               </Badge>
             ))}

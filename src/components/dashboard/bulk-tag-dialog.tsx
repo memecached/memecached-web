@@ -53,10 +53,16 @@ export function BulkTagDialog({
           placeholder="Select tags to add..."
         />
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isLoading}>
+          <Button
+            variant="outline"
+            className="dark:border-emerald-400/30 dark:bg-[#0a0d0b] dark:text-emerald-50 dark:hover:bg-emerald-400/10"
+            onClick={() => handleOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
           <Button
+            className="dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-200"
             onClick={() => onConfirm(selectedTags)}
             disabled={isLoading || selectedTags.length === 0}
           >

@@ -64,12 +64,20 @@ function UserRow({ user }: { user: AdminUser }) {
       <td className="p-3">{user.name}</td>
       <td className="p-3 text-muted-foreground">{user.email}</td>
       <td className="p-3">
-        <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+        <Badge
+          variant={user.role === "admin" ? "default" : "secondary"}
+          className="rounded-sm border border-emerald-500/35 bg-zinc-50 text-zinc-700 dark:border-emerald-400/35 dark:bg-[#050706] dark:text-emerald-100/75"
+        >
           {user.role}
         </Badge>
       </td>
       <td className="p-3">
-        <Badge variant={statusVariant(user.status)}>{user.status}</Badge>
+        <Badge
+          variant={statusVariant(user.status)}
+          className="rounded-sm border border-emerald-500/35 bg-zinc-50 text-zinc-700 dark:border-emerald-400/35 dark:bg-[#050706] dark:text-emerald-100/75"
+        >
+          {user.status}
+        </Badge>
       </td>
       <td className="p-3 text-muted-foreground">
         {new Date(user.createdAt).toLocaleDateString()}
@@ -156,14 +164,14 @@ export function UserTable() {
   return (
     <div className="space-y-4">
       {usersQuery.isLoading && (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex min-h-80 items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-white dark:border-emerald-400/25 dark:bg-[#0a0d0b]">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground dark:text-emerald-200" />
         </div>
       )}
 
       {usersQuery.isError && (
-        <div className="flex justify-center py-12 text-destructive">
-          <p>Failed to load users</p>
+        <div className="flex min-h-80 items-center justify-center rounded-lg border border-dashed border-destructive/30 bg-white text-destructive dark:bg-[#0a0d0b]">
+          <p className="text-sm font-medium">Failed to load users</p>
         </div>
       )}
 
