@@ -56,6 +56,9 @@ function mockFetchDefaults() {
       }),
     )
     .on("s3.amazonaws.com", () => new Response(null, { status: 200 }))
+    .on("/api/memes/suggest-description", () =>
+      Response.json({ description: "A cat stares dramatically at a computer screen." }),
+    )
     .on("/api/memes", () => Response.json({ meme: { id: "1", imageUrl: "https://cdn.example.com/user/abc.png" } }));
 }
 
@@ -110,6 +113,7 @@ describe("UploadForm", () => {
 
     expect(screen.getByAltText("Upload preview")).toBeInTheDocument();
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /suggest description/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/tags/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /upload/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
@@ -188,6 +192,72 @@ describe("UploadForm", () => {
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /upload/i })).toBeEnabled();
+    });
+  });
+
+  test("suggests a description for the selected image", async () => {
+    const user = userEvent.setup();
+    mockFetchDefaults().on("/api/memes/suggest-description", () =>
+      Response.json({ description: "A cat stares dramatically at a computer screen." }),
+    );
+
+    renderWithQueryClient(<UploadForm />);
+
+    await selectFileAndWaitForForm(user);
+    await user.click(screen.getByRole("button", { name: /suggest description/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/description/i)).toHaveValue(
+        "A cat stares dramatically at a computer screen.",
+      );
+    });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "/api/memes/suggest-description",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.any(FormData),
+      }),
+    );
+  });
+
+  test("disables description suggestion after success until a new image is selected", async () => {
+    const user = userEvent.setup();
+    mockFetchDefaults();
+
+    renderWithQueryClient(<UploadForm />);
+
+    await selectFileAndWaitForForm(user);
+    await user.click(screen.getByRole("button", { name: /suggest description/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/description/i)).toHaveValue(
+        "A cat stares dramatically at a computer screen.",
+      );
+      expect(screen.getByRole("button", { name: /suggest description/i })).toBeDisabled();
+      expect(screen.getByText("Description suggested")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+    await selectFileAndWaitForForm(user);
+
+    expect(screen.getByRole("button", { name: /suggest description/i })).toBeEnabled();
+  });
+
+  test("shows toast when description suggestion fails", async () => {
+    const user = userEvent.setup();
+    mockFetchDefaults().on(
+      "/api/memes/suggest-description",
+      Response.json({ error: "Failed to suggest description" }, { status: 502 }),
+    );
+
+    renderWithQueryClient(<UploadForm />);
+
+    await selectFileAndWaitForForm(user);
+    await user.click(screen.getByRole("button", { name: /suggest description/i }));
+
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith("Failed to suggest description");
     });
   });
 

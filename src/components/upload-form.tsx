@@ -10,11 +10,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/tag-input";
-import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, X, CheckCircle, AlertCircle, Loader2, Sparkles } from "lucide-react";
 import { SUCCESS_DISPLAY_MS } from "@/lib/constants";
 import { MAX_FILE_SIZE, ACCEPTED_MIME_TYPES } from "@/lib/constants";
 import { createMemeSchema } from "@/lib/validations";
-import type { TagListResponse } from "@/lib/validations";
+import type { SuggestDescriptionResponse, TagListResponse } from "@/lib/validations";
 import { invalidateAll } from "@/lib/optimistic-cache";
 import { apiFetch } from "@/lib/api-fetch";
 
@@ -36,6 +36,8 @@ export function UploadForm() {
   const [uploadState, setUploadState] = useState<UploadState>({
     status: "idle",
   });
+  const [isSuggestingDescription, setIsSuggestingDescription] = useState(false);
+  const [hasSuggestedDescription, setHasSuggestedDescription] = useState(false);
 
   const tagsQuery = useQuery({
     queryKey: ["tags"],
@@ -51,6 +53,7 @@ export function UploadForm() {
     register,
     handleSubmit,
     control,
+    setValue,
     reset: resetForm,
     formState: { errors, isValid },
   } = useForm<FormValues>({
@@ -62,6 +65,7 @@ export function UploadForm() {
   const acceptFile = useCallback((f: File) => {
     setFile(f);
     setPreview(URL.createObjectURL(f));
+    setHasSuggestedDescription(false);
     setUploadState({ status: "previewing" });
   }, []);
 
@@ -161,6 +165,38 @@ export function UploadForm() {
     }
   };
 
+  const suggestDescription = async () => {
+    if (!file) return;
+
+    setIsSuggestingDescription(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await apiFetch("/api/memes/suggest-description", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error ?? "Failed to suggest description");
+      }
+
+      const body = (await res.json()) as SuggestDescriptionResponse;
+      setValue("description", body.description, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+      setHasSuggestedDescription(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to suggest description");
+    } finally {
+      setIsSuggestingDescription(false);
+    }
+  };
+
   // Display success message for SUCCESS_DISPLAY_MS seconds
   // then reset upload form status
   useEffect(() => {
@@ -175,6 +211,7 @@ export function UploadForm() {
     if (preview) URL.revokeObjectURL(preview);
     setFile(null);
     setPreview(null);
+    setHasSuggestedDescription(false);
     resetForm();
     setUploadState({ status: "idle" });
   };
@@ -245,6 +282,28 @@ export function UploadForm() {
               disabled={uploadState.status === "uploading"}
               {...register("description")}
             />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={suggestDescription}
+              disabled={uploadState.status === "uploading" || isSuggestingDescription || hasSuggestedDescription}
+            >
+              {isSuggestingDescription ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : hasSuggestedDescription ? (
+                <CheckCircle className="mr-2 h-4 w-4 text-green-600 dark:text-green-400" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Suggest description
+            </Button>
+            {hasSuggestedDescription && (
+              <span id="description-suggested-status" className="sr-only">
+                Description suggested
+              </span>
+            )}
             {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>}
           </div>
 
