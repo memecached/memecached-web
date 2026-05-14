@@ -37,7 +37,12 @@ export function DeleteConfirmationDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <Button
+            variant="outline"
+            className="dark:border-emerald-400/30 dark:bg-[#0a0d0b] dark:text-emerald-50 dark:hover:bg-emerald-400/10"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
           <Button variant="destructive" onClick={onConfirm} disabled={isLoading}>

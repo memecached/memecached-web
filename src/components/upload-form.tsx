@@ -228,31 +228,31 @@ export function UploadForm() {
   const showDropzone = uploadState.status === "idle" || uploadState.status === "error";
 
   return (
-    <div className="w-full max-w-md space-y-4">
+    <div className="w-full max-w-xl space-y-4">
       {showDropzone && (
         <div
           {...getRootProps()}
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center transition-colors ${
             isDragActive
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-              : "border-zinc-300 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-600"
+              ? "border-emerald-500 bg-emerald-50 dark:border-emerald-300 dark:bg-emerald-400/10"
+              : "border-emerald-500/35 bg-white hover:border-emerald-500/60 hover:bg-emerald-50 dark:border-emerald-400/35 dark:bg-[#0a0d0b] dark:hover:border-emerald-300/70 dark:hover:bg-emerald-400/10"
           }`}
         >
           <input {...getInputProps()} />
-          <Upload className="mb-3 h-8 w-8 text-zinc-400" />
+          <Upload className="mb-3 h-8 w-8 text-emerald-600 dark:text-emerald-300" />
           {isDragActive ? (
-            <p className="text-sm text-blue-600 dark:text-blue-400">Drop your image here</p>
+            <p className="text-sm text-emerald-700 dark:text-emerald-200">Drop your image here</p>
           ) : (
             <>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">Drag & drop an image, or click to select</p>
-              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">PNG, JPEG, GIF, WebP — max 2 MB — or paste from clipboard</p>
+              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">PNG, JPEG, GIF, WebP - max 2 MB - or paste from clipboard</p>
             </>
           )}
         </div>
       )}
 
       {preview && (
-        <div className="relative overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
+        <div className="relative overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-emerald-400/25 dark:bg-[#0a0d0b]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={preview}
@@ -271,9 +271,12 @@ export function UploadForm() {
       )}
 
       {(uploadState.status === "previewing" || uploadState.status === "uploading") && (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-3 rounded-lg border border-zinc-200 bg-white p-3 shadow-xs dark:border-emerald-400/25 dark:bg-[#0a0d0b]"
+        >
           <div>
-            <label htmlFor="description" className="mb-1 block text-sm font-medium">
+            <label htmlFor="description" className="mb-1 block text-sm font-medium dark:text-emerald-100/80">
               Description
             </label>
             <Textarea
@@ -286,7 +289,7 @@ export function UploadForm() {
               type="button"
               variant="outline"
               size="sm"
-              className="mt-2"
+              className="mt-2 dark:border-emerald-400/30 dark:bg-[#0a0d0b] dark:text-emerald-50 dark:hover:bg-emerald-400/10"
               onClick={suggestDescription}
               disabled={uploadState.status === "uploading" || isSuggestingDescription || hasSuggestedDescription}
             >
@@ -308,7 +311,7 @@ export function UploadForm() {
           </div>
 
           <div>
-            <label htmlFor="tags" className="mb-1 block text-sm font-medium">
+            <label htmlFor="tags" className="mb-1 block text-sm font-medium dark:text-emerald-100/80">
               Tags
             </label>
             <Controller
@@ -329,11 +332,21 @@ export function UploadForm() {
           </div>
 
           <div className="flex gap-2">
-            <Button type="submit" className="flex-1" disabled={!isValid || uploadState.status === "uploading"}>
+            <Button
+              type="submit"
+              className="flex-1 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-200"
+              disabled={!isValid || uploadState.status === "uploading"}
+            >
               <Upload className="mr-2 h-4 w-4" />
               Upload
             </Button>
-            <Button type="button" variant="outline" onClick={reset} disabled={uploadState.status === "uploading"}>
+            <Button
+              type="button"
+              variant="outline"
+              className="dark:border-emerald-400/30 dark:bg-[#0a0d0b] dark:text-emerald-50 dark:hover:bg-emerald-400/10"
+              onClick={reset}
+              disabled={uploadState.status === "uploading"}
+            >
               <X className="mr-1 h-4 w-4" />
               Cancel
             </Button>
@@ -342,14 +355,14 @@ export function UploadForm() {
       )}
 
       {uploadState.status === "success" && (
-        <div className="flex flex-col items-center justify-center gap-2 py-8 text-green-600 dark:text-green-400">
+        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-emerald-500/35 bg-white py-8 text-emerald-600 dark:border-emerald-400/35 dark:bg-[#0a0d0b] dark:text-emerald-300">
           <CheckCircle className="h-10 w-10" />
           <p className="text-sm font-medium">Uploaded successfully</p>
         </div>
       )}
 
       {uploadState.status === "error" && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-white p-3 dark:bg-[#0a0d0b]">
           <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
             <AlertCircle className="h-4 w-4" />
             {uploadState.message}

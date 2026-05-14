@@ -220,7 +220,7 @@ export function MemeTable() {
       <DashboardToolbar tags={tagNames} />
 
       {/* Bulk actions bar */}
-      <div className="flex items-center gap-3 rounded-md border bg-muted/50 px-4 py-2">
+      <div className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2 shadow-xs dark:border-emerald-400/25 dark:bg-[#0a0d0b]">
         <span className="text-sm font-medium text-muted-foreground">
           {selectedIds.size > 0 ? `${selectedIds.size} selected` : "None selected"}
         </span>
@@ -233,7 +233,13 @@ export function MemeTable() {
           <Trash2 className="h-4 w-4" />
           Delete
         </Button>
-        <Button variant="outline" size="sm" disabled={selectedIds.size === 0} onClick={() => setBulkTagOpen(true)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="dark:border-emerald-400/30 dark:bg-[#0a0d0b] dark:text-emerald-50 dark:hover:bg-emerald-400/10"
+          disabled={selectedIds.size === 0}
+          onClick={() => setBulkTagOpen(true)}
+        >
           <Tags className="h-4 w-4" />
           Add tags
         </Button>
@@ -241,15 +247,15 @@ export function MemeTable() {
 
       {/* Loading */}
       {memesQuery.isLoading && (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex min-h-80 items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-white dark:border-emerald-400/25 dark:bg-[#0a0d0b]">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground dark:text-emerald-200" />
         </div>
       )}
 
       {/* Error */}
       {memesQuery.isError && (
-        <div className="flex justify-center py-12 text-destructive">
-          <p>Failed to load memes</p>
+        <div className="flex min-h-80 items-center justify-center rounded-lg border border-dashed border-destructive/30 bg-white text-destructive dark:bg-[#0a0d0b]">
+          <p className="text-sm font-medium">Failed to load memes</p>
         </div>
       )}
 

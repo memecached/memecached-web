@@ -86,11 +86,15 @@ export function TagInput({
   return (
     <div className="relative">
       <div
-        className="border-input flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] md:text-sm"
+        className="border-input flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] dark:border-emerald-400/25 dark:bg-[#050706] dark:focus-within:border-emerald-400/60 dark:focus-within:ring-emerald-400/20 md:text-sm"
         onClick={() => inputRef.current?.focus()}
       >
         {value.map((tag) => (
-          <Badge key={tag} variant="secondary" className="gap-1">
+          <Badge
+            key={tag}
+            variant="secondary"
+            className="gap-1 rounded-sm border border-emerald-500/35 bg-zinc-50 text-zinc-600 dark:border-emerald-400/35 dark:bg-[#0a0d0b] dark:text-emerald-100/75"
+          >
             {tag}
             <button
               type="button"
@@ -115,7 +119,7 @@ export function TagInput({
           autoComplete="off"
           aria-autocomplete="list"
           aria-controls="tag-suggestions"
-          className="placeholder:text-muted-foreground min-w-20 flex-1 bg-transparent outline-none disabled:pointer-events-none disabled:opacity-50"
+          className="placeholder:text-muted-foreground min-w-20 flex-1 bg-transparent outline-none disabled:pointer-events-none disabled:opacity-50 dark:text-zinc-100 dark:placeholder:text-zinc-500"
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
@@ -136,7 +140,7 @@ export function TagInput({
         <ul
           id="tag-suggestions"
           role="listbox"
-          className="bg-popover text-popover-foreground absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-md border p-1 shadow-md"
+          className="bg-popover text-popover-foreground absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-md border p-1 shadow-md dark:border-emerald-400/25 dark:bg-[#0a0d0b] dark:text-zinc-100"
         >
           {filtered.map((suggestion, index) => (
             <li
@@ -145,8 +149,8 @@ export function TagInput({
               aria-selected={index === highlightedIndex}
               className={`cursor-pointer rounded-sm px-2 py-1.5 text-sm ${
                 index === highlightedIndex
-                  ? "bg-accent text-accent-foreground"
-                  : "hover:bg-accent hover:text-accent-foreground"
+                  ? "bg-accent text-accent-foreground dark:bg-emerald-400/10 dark:text-emerald-50"
+                  : "hover:bg-accent hover:text-accent-foreground dark:hover:bg-emerald-400/10 dark:hover:text-emerald-50"
               }`}
               onMouseDown={(e) => {
                 e.preventDefault();

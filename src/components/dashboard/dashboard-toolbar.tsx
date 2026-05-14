@@ -74,19 +74,20 @@ export function DashboardToolbar({ tags }: DashboardToolbarProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-      <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search memes..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="pl-9"
-        />
-      </div>
-      <div className="flex gap-2">
+    <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-xs dark:border-emerald-400/25 dark:bg-[#0a0d0b]">
+      <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground dark:text-emerald-100/55" />
+          <Input
+            placeholder="Search memes..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="h-10 rounded-md border-zinc-200 bg-zinc-50 pl-9 text-sm shadow-none dark:border-emerald-400/25 dark:bg-[#050706] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:border-emerald-400/60 dark:focus-visible:ring-emerald-400/20"
+          />
+        </div>
+        <div className="flex gap-2">
         <Select value={tag || "all"} onValueChange={(v) => setParam("tag", v === "all" ? "" : v)}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="h-10 w-[140px]">
             <SelectValue placeholder="All tags" />
           </SelectTrigger>
           <SelectContent>
@@ -102,7 +103,7 @@ export function DashboardToolbar({ tags }: DashboardToolbarProps) {
           value={sortKey(currentSortBy, currentSortOrder)}
           onValueChange={handleSortChange}
         >
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="h-10 w-[120px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -113,6 +114,7 @@ export function DashboardToolbar({ tags }: DashboardToolbarProps) {
             ))}
           </SelectContent>
         </Select>
+        </div>
       </div>
     </div>
   );
